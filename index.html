@@ -1,0 +1,2920 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Мисия: Окръжност — Тайната на Евклид</title>
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=JetBrains+Mono:wght@400;700&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #e8dfc8;
+    --paper-dark: #d4c8a8;
+    --ink: #1a1612;
+    --ink-faded: #3d342a;
+    --red-stamp: #8b2a1f;
+    --red-alert: #c23616;
+    --gold: #b8893a;
+    --gold-bright: #e8b64a;
+    --classified: #2d2820;
+    --shadow: rgba(26, 22, 18, 0.4);
+    --success: #347037;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Special Elite', monospace;
+    background: var(--paper);
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(139, 42, 31, 0.05) 0%, transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(184, 137, 58, 0.08) 0%, transparent 50%),
+      repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(61, 52, 42, 0.02) 2px, rgba(61, 52, 42, 0.02) 4px);
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 20px;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.9' numOctaves='3'/%3E%3CfeColorMatrix values='0 0 0 0 0.1 0 0 0 0 0.08 0 0 0 0 0.05 0 0 0 0 0.15 0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+    opacity: 0.3;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .container {
+    max-width: 1000px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 2;
+  }
+
+  .intro {
+    background: var(--paper);
+    border: 3px double var(--ink);
+    padding: 40px;
+    margin-bottom: 30px;
+    position: relative;
+    box-shadow: 8px 8px 0 var(--shadow), 0 0 40px rgba(139, 42, 31, 0.1);
+    transform: rotate(-0.3deg);
+    animation: paperDrop 0.8s ease-out;
+  }
+
+  @keyframes paperDrop {
+    0% { opacity: 0; transform: translateY(-30px) rotate(-3deg); }
+    100% { opacity: 1; transform: translateY(0) rotate(-0.3deg); }
+  }
+
+  .stamp {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    color: var(--red-stamp);
+    border: 4px solid var(--red-stamp);
+    padding: 8px 16px;
+    font-weight: bold;
+    font-size: 14px;
+    letter-spacing: 3px;
+    transform: rotate(12deg);
+    opacity: 0;
+    font-family: 'JetBrains Mono', monospace;
+    animation: stampPress 0.6s ease-out 1s forwards;
+  }
+
+  @keyframes stampPress {
+    0% { opacity: 0; transform: rotate(12deg) scale(3); }
+    100% { opacity: 0.85; transform: rotate(12deg) scale(1); }
+  }
+
+  .stamp::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border: 1px solid var(--red-stamp);
+    opacity: 0.5;
+  }
+
+  .classified-tag {
+    display: inline-block;
+    background: var(--ink);
+    color: var(--paper);
+    padding: 4px 12px;
+    font-size: 11px;
+    letter-spacing: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 20px;
+  }
+
+  h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(32px, 6vw, 56px);
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 8px;
+    letter-spacing: -1px;
+  }
+
+  h1 .ornament {
+    color: var(--red-stamp);
+    font-style: italic;
+    font-weight: 500;
+  }
+
+  .subtitle {
+    font-style: italic;
+    font-size: 18px;
+    color: var(--ink-faded);
+    margin-bottom: 30px;
+    font-family: 'Cormorant Garamond', serif;
+  }
+
+  .briefing {
+    border-left: 4px solid var(--red-stamp);
+    padding: 16px 20px;
+    margin: 20px 0;
+    background: rgba(139, 42, 31, 0.05);
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  .briefing strong { color: var(--red-stamp); }
+
+  .code-display {
+    background: var(--classified);
+    color: var(--gold);
+    padding: 24px;
+    margin: 24px 0;
+    font-family: 'JetBrains Mono', monospace;
+    text-align: center;
+    border: 2px solid var(--gold);
+    position: relative;
+  }
+
+  .code-display::before,
+  .code-display::after {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--gold);
+  }
+  .code-display::before { top: 6px; left: 6px; border-right: none; border-bottom: none; }
+  .code-display::after { bottom: 6px; right: 6px; border-left: none; border-top: none; }
+
+  .code-label {
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--paper-dark);
+    margin-bottom: 12px;
+  }
+
+  .code-digits {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    font-size: 42px;
+    font-weight: 700;
+  }
+
+  .code-digit {
+    width: 50px;
+    height: 60px;
+    border: 2px dashed var(--gold);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(184, 137, 58, 0.1);
+    transition: all 0.5s;
+  }
+
+  @keyframes digitReveal {
+    0% { transform: scale(0.3) rotate(-360deg); opacity: 0; }
+    60% { transform: scale(1.3) rotate(0deg); }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  }
+
+  /* Вълнение на целия код при попълване на нова цифра */
+  .code-display.pulse {
+    animation: codePulse 0.8s ease-out;
+  }
+
+  @keyframes codePulse {
+    0%, 100% { box-shadow: 0 0 0 rgba(232, 182, 74, 0); transform: scale(1); }
+    50% {
+      box-shadow: 0 0 40px rgba(232, 182, 74, 0.6), inset 0 0 20px rgba(232, 182, 74, 0.2);
+      transform: scale(1.02);
+    }
+  }
+
+  /* Светлинен проблясък, когато цифрата се разкрива */
+  @keyframes goldenBurst {
+    0% { box-shadow: 0 0 0 rgba(184, 137, 58, 0); }
+    40% { box-shadow: 0 0 40px rgba(232, 182, 74, 0.9), 0 0 80px rgba(184, 137, 58, 0.5); }
+    100% { box-shadow: 0 0 20px rgba(184, 137, 58, 0.6); }
+  }
+
+  .code-digit.filled {
+    border-style: solid;
+    background: var(--gold);
+    color: var(--classified);
+    animation: digitReveal 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55), goldenBurst 1.2s ease-out;
+    box-shadow: 0 0 20px rgba(184, 137, 58, 0.6);
+  }
+
+  /* Анимация при отключване на нова станция */
+  .station-card.just-unlocked {
+    animation: unlockShake 0.8s ease-out;
+  }
+
+  @keyframes unlockShake {
+    0% { transform: scale(1); box-shadow: 4px 4px 0 var(--shadow); }
+    20% { transform: scale(1.08) rotate(-2deg); box-shadow: 8px 8px 0 var(--gold); }
+    40% { transform: scale(1.05) rotate(1deg); box-shadow: 6px 6px 0 var(--gold); }
+    60% { transform: scale(1.04) rotate(-0.5deg); }
+    100% { transform: scale(1) rotate(0); box-shadow: 4px 4px 0 var(--shadow); }
+  }
+
+  .stations-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+  }
+
+  .station-card {
+    background: var(--paper);
+    border: 2px solid var(--ink);
+    padding: 20px;
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.3s, box-shadow 0.3s;
+    box-shadow: 4px 4px 0 var(--shadow);
+    animation: cardAppear 0.5s ease-out backwards;
+  }
+
+  .station-card:nth-child(1) { animation-delay: 0.1s; }
+  .station-card:nth-child(2) { animation-delay: 0.2s; }
+  .station-card:nth-child(3) { animation-delay: 0.3s; }
+  .station-card:nth-child(4) { animation-delay: 0.4s; }
+  .station-card:nth-child(5) { animation-delay: 0.5s; }
+  .station-card:nth-child(6) { animation-delay: 0.6s; }
+
+  @keyframes cardAppear {
+    0% { opacity: 0; transform: translateY(20px) rotate(-2deg); }
+    100% { opacity: 1; transform: translateY(0) rotate(0deg); }
+  }
+
+  .station-card:hover:not(.locked):not(.completed) {
+    transform: translate(-3px, -3px) rotate(-0.5deg);
+    box-shadow: 10px 10px 0 var(--shadow);
+  }
+
+  .station-card.locked {
+    opacity: 0.45;
+    cursor: not-allowed;
+    background: repeating-linear-gradient(135deg, var(--paper), var(--paper) 10px, var(--paper-dark) 10px, var(--paper-dark) 20px);
+  }
+
+  .station-card.locked::before {
+    content: '🔒';
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    font-size: 24px;
+    opacity: 0.6;
+  }
+
+  .station-card.completed {
+    border-color: var(--gold);
+    background: linear-gradient(to bottom right, var(--paper), rgba(184, 137, 58, 0.15));
+  }
+
+  .station-card.completed::after {
+    content: '✓ РАЗКОДИРАНА';
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: var(--gold);
+    color: var(--classified);
+    padding: 4px 10px;
+    font-size: 10px;
+    letter-spacing: 2px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    animation: completedBadge 0.5s ease-out;
+  }
+
+  @keyframes completedBadge {
+    0% { transform: scale(0) rotate(-180deg); }
+    100% { transform: scale(1) rotate(0deg); }
+  }
+
+  .station-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 48px;
+    font-weight: 700;
+    color: var(--red-stamp);
+    line-height: 1;
+    font-style: italic;
+  }
+
+  .station-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    font-weight: 700;
+    margin: 8px 0;
+  }
+
+  .station-desc {
+    font-size: 13px;
+    color: var(--ink-faded);
+    line-height: 1.5;
+  }
+
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(26, 22, 18, 0.85);
+    display: none;
+    align-items: flex-start;
+    justify-content: center;
+    z-index: 100;
+    padding: 20px;
+    overflow-y: auto;
+    backdrop-filter: blur(3px);
+  }
+  .modal-backdrop.active { display: flex; }
+
+  .modal {
+    background: var(--paper);
+    border: 3px solid var(--ink);
+    max-width: 700px;
+    width: 100%;
+    padding: 36px;
+    position: relative;
+    margin: 20px 0;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    animation: modalFlipIn 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+    transform-style: preserve-3d;
+    perspective: 1200px;
+  }
+
+  @keyframes modalFlipIn {
+    0% {
+      opacity: 0;
+      transform: perspective(1200px) rotateX(-45deg) translateY(-80px) scale(0.7);
+    }
+    60% {
+      opacity: 1;
+      transform: perspective(1200px) rotateX(5deg) translateY(10px) scale(1.02);
+    }
+    100% {
+      opacity: 1;
+      transform: perspective(1200px) rotateX(0deg) translateY(0) scale(1);
+    }
+  }
+
+  @keyframes modalSlide {
+    from { opacity: 0; transform: translateY(40px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: none;
+    border: 2px solid var(--ink);
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 18px;
+    transition: all 0.2s;
+  }
+
+  .modal-close:hover { background: var(--ink); color: var(--paper); }
+
+  .modal-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 14px;
+    letter-spacing: 4px;
+    color: var(--red-stamp);
+    text-transform: uppercase;
+  }
+
+  .modal h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 36px;
+    font-weight: 700;
+    margin: 4px 0 20px;
+    line-height: 1;
+  }
+
+  .problem-box {
+    background: rgba(26, 22, 18, 0.04);
+    border-left: 3px solid var(--ink);
+    padding: 16px 20px;
+    margin: 20px 0;
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  .diagram {
+    display: flex;
+    justify-content: center;
+    padding: 24px;
+    background: #faf6ec;
+    border: 1px dashed var(--ink-faded);
+    margin: 20px 0;
+  }
+
+  .diagram svg { max-width: 100%; height: auto; }
+
+  .answer-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-top: 24px;
+    flex-wrap: wrap;
+  }
+
+  .answer-label { font-weight: bold; font-size: 15px; }
+
+  .answer-input {
+    flex: 1;
+    min-width: 150px;
+    padding: 12px 16px;
+    border: 2px solid var(--ink);
+    background: var(--paper);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 18px;
+    color: var(--ink);
+  }
+
+  .answer-input:focus {
+    outline: none;
+    border-color: var(--red-stamp);
+    background: #fff;
+  }
+
+  .btn {
+    padding: 12px 24px;
+    border: 2px solid var(--ink);
+    background: var(--ink);
+    color: var(--paper);
+    font-family: 'Special Elite', monospace;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 1px;
+  }
+
+  .btn:hover {
+    background: var(--red-stamp);
+    border-color: var(--red-stamp);
+    transform: translateY(-2px);
+  }
+
+  .btn:active { transform: translateY(0); }
+
+  .hint-box {
+    margin-top: 20px;
+    padding: 14px 18px;
+    background: rgba(184, 137, 58, 0.15);
+    border: 1px solid var(--gold);
+    font-size: 14px;
+    font-style: italic;
+    display: none;
+  }
+
+  .hint-box.active { display: block; animation: modalSlide 0.3s; }
+
+  .feedback {
+    margin-top: 16px;
+    padding: 14px 18px;
+    font-weight: bold;
+    display: none;
+  }
+
+  .feedback.success {
+    display: block;
+    background: rgba(52, 112, 55, 0.15);
+    border: 2px solid var(--success);
+    color: #1f4a20;
+    animation: successPulse 0.6s ease-out;
+  }
+
+  @keyframes successPulse {
+    0% { transform: scale(0.95); opacity: 0; }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .feedback.error {
+    display: block;
+    background: rgba(194, 54, 22, 0.15);
+    border: 2px solid var(--red-alert);
+    color: var(--red-alert);
+  }
+
+  .hint-btn {
+    background: transparent;
+    color: var(--gold);
+    border: 2px dashed var(--gold);
+    padding: 8px 16px;
+    font-family: 'Special Elite', monospace;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .hint-btn:hover:not(:disabled) { background: var(--gold); color: var(--classified); }
+  .hint-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .stats {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--classified);
+    color: var(--paper);
+    padding: 14px 24px;
+    margin-bottom: 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 2px;
+    flex-wrap: wrap;
+    gap: 12px;
+    position: sticky;
+    top: 10px;
+    z-index: 50;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+
+  .stat-item { display: flex; align-items: center; gap: 8px; }
+  .stat-label { color: var(--paper-dark); font-size: 11px; }
+  .stat-value { color: var(--gold); font-weight: 700; font-size: 16px; }
+  .timer-value { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+
+  .penalty-stamp {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-15deg);
+    color: var(--red-alert);
+    border: 6px solid var(--red-alert);
+    padding: 14px 32px;
+    font-size: 32px;
+    font-weight: 900;
+    letter-spacing: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    background: rgba(232, 223, 200, 0.95);
+    pointer-events: none;
+    opacity: 0;
+    z-index: 10;
+    box-shadow: 0 0 30px rgba(194, 54, 22, 0.5);
+  }
+
+  .penalty-stamp.active { animation: stampSlam 1.8s ease-out; }
+
+  @keyframes stampSlam {
+    0% { opacity: 0; transform: translate(-50%, -50%) rotate(-15deg) scale(4); }
+    15% { opacity: 1; transform: translate(-50%, -50%) rotate(-15deg) scale(1); }
+    85% { opacity: 1; transform: translate(-50%, -50%) rotate(-15deg) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -50%) rotate(-15deg) scale(1); }
+  }
+
+  .modal.penalty-shake { animation: heavyShake 0.5s; }
+
+  @keyframes heavyShake {
+    0%, 100% { transform: translateX(0); }
+    10% { transform: translateX(-12px) rotate(-1deg); }
+    30% { transform: translateX(12px) rotate(1deg); }
+    50% { transform: translateX(-8px) rotate(-0.5deg); }
+    70% { transform: translateX(8px) rotate(0.5deg); }
+    90% { transform: translateX(-4px); }
+  }
+
+  .attempts-indicator {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--ink-faded);
+  }
+
+  .attempt-dot {
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    background: var(--paper);
+    transition: all 0.3s;
+  }
+
+  .attempt-dot.used {
+    background: var(--red-alert);
+    border-color: var(--red-alert);
+    box-shadow: 0 0 8px rgba(194, 54, 22, 0.6);
+    animation: dotPop 0.3s;
+  }
+
+  @keyframes dotPop {
+    0% { transform: scale(0.5); }
+    50% { transform: scale(1.3); }
+    100% { transform: scale(1); }
+  }
+
+  .lockout-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(26, 22, 18, 0.92);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--paper);
+    text-align: center;
+    z-index: 20;
+    padding: 20px;
+  }
+
+  .lockout-overlay.active { display: flex; }
+
+  .lockout-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 32px;
+    color: var(--red-alert);
+    margin-bottom: 16px;
+    font-style: italic;
+  }
+
+  .lockout-timer {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 64px;
+    font-weight: 700;
+    color: var(--gold);
+    margin: 20px 0;
+  }
+
+  .lockout-msg {
+    max-width: 400px;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--paper-dark);
+  }
+
+  .timer-value.penalty { animation: timerPenalty 1s; }
+  @keyframes timerPenalty {
+    0%, 100% { color: var(--gold); }
+    50% { color: var(--red-alert); transform: scale(1.2); }
+  }
+
+  .stat-value.penalty-flash { animation: scorePenalty 0.6s; }
+  @keyframes scorePenalty {
+    0%, 100% { color: var(--gold); }
+    50% { color: var(--red-alert); }
+  }
+
+  /* ===== ЕПИЧНА ФИНАЛНА АНИМАЦИЯ ===== */
+  .finale-overlay {
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(circle at center, #1a1612 0%, #000 100%);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    overflow: hidden;
+  }
+
+  .finale-overlay.active { display: flex; }
+
+  .safe-container {
+    position: relative;
+    width: 420px;
+    max-width: 90vw;
+    aspect-ratio: 1;
+    opacity: 0;
+    transform: scale(0.3);
+    animation: safeAppear 1s ease-out forwards;
+  }
+
+  @keyframes safeAppear {
+    0% { opacity: 0; transform: scale(0.3); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+
+  .safe-door {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, #3a3530 0%, #1a1612 50%, #3a3530 100%);
+    border: 6px solid var(--gold);
+    border-radius: 20px;
+    box-shadow:
+      inset 0 0 40px rgba(0,0,0,0.8),
+      0 0 60px rgba(184, 137, 58, 0.4),
+      0 0 120px rgba(184, 137, 58, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    transform-origin: left center;
+    backface-visibility: hidden;
+  }
+
+  .safe-door.opening {
+    animation: doorOpen 2.5s cubic-bezier(0.68, -0.3, 0.32, 1) forwards;
+  }
+
+  @keyframes doorOpen {
+    0% { transform: perspective(1000px) rotateY(0deg); }
+    100% { transform: perspective(1000px) rotateY(-105deg); }
+  }
+
+  .safe-wheel {
+    width: 180px;
+    height: 180px;
+    border: 8px solid var(--gold);
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #4a4540, #1a1612);
+    position: relative;
+    box-shadow: inset 0 0 30px rgba(0,0,0,0.8), 0 0 20px rgba(184,137,58,0.3);
+    animation: wheelSpin 3s ease-in-out;
+  }
+
+  @keyframes wheelSpin {
+    0% { transform: rotate(0deg); }
+    20% { transform: rotate(-180deg); }
+    40% { transform: rotate(90deg); }
+    60% { transform: rotate(-270deg); }
+    80% { transform: rotate(180deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .safe-wheel::before {
+    content: '';
+    position: absolute;
+    inset: 20px;
+    border: 2px dashed var(--gold);
+    border-radius: 50%;
+    opacity: 0.5;
+  }
+
+  .safe-wheel::after {
+    content: '';
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 20px;
+    background: var(--gold-bright);
+    box-shadow: 0 0 10px var(--gold-bright);
+  }
+
+  .safe-code-display {
+    position: absolute;
+    top: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--gold-bright);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
+    letter-spacing: 6px;
+    padding: 8px 16px;
+    border: 1px solid var(--gold);
+    background: rgba(0,0,0,0.7);
+    min-width: 180px;
+    text-align: center;
+  }
+
+  .light-beam {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(232, 182, 74, 0.8) 0%, transparent 50%);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .light-beam.active { animation: lightBurst 1.5s ease-out forwards; }
+
+  @keyframes lightBurst {
+    0% { opacity: 0; transform: scale(0.5); }
+    30% { opacity: 1; transform: scale(1.5); }
+    100% { opacity: 0; transform: scale(3); }
+  }
+
+  .rays {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 10px;
+    height: 10px;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .rays.active { animation: raysReveal 2s ease-out forwards; }
+
+  @keyframes raysReveal {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
+    50% { opacity: 1; }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(4); }
+  }
+
+  .ray {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 2px;
+    height: 300px;
+    background: linear-gradient(to top, transparent, var(--gold-bright), transparent);
+    transform-origin: center bottom;
+  }
+
+  .finale-content {
+    position: absolute;
+    opacity: 0;
+    text-align: center;
+    padding: 40px;
+    max-width: 700px;
+    z-index: 10;
+  }
+
+  .finale-content.active { animation: contentReveal 1.5s ease-out forwards; }
+
+  @keyframes contentReveal {
+    0% { opacity: 0; transform: scale(0.8); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+
+  .finale-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(40px, 8vw, 72px);
+    font-weight: 700;
+    font-style: italic;
+    color: var(--gold-bright);
+    margin-bottom: 20px;
+    text-shadow: 0 0 30px var(--gold-bright), 0 0 60px rgba(232, 182, 74, 0.5);
+    animation: glowPulse 2s ease-in-out infinite alternate;
+  }
+
+  @keyframes glowPulse {
+    from { text-shadow: 0 0 30px var(--gold-bright), 0 0 60px rgba(232, 182, 74, 0.5); }
+    to { text-shadow: 0 0 40px var(--gold-bright), 0 0 90px rgba(232, 182, 74, 0.8); }
+  }
+
+  .finale-quote {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 22px;
+    color: var(--paper);
+    margin: 20px 0;
+    line-height: 1.5;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+  }
+
+  .finale-quote::before, .finale-quote::after {
+    content: '"';
+    color: var(--gold);
+    font-size: 40px;
+    vertical-align: middle;
+  }
+
+  .finale-author {
+    color: var(--gold);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 3px;
+    margin-bottom: 30px;
+  }
+
+  .finale-stats {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin: 30px 0;
+    color: var(--paper);
+  }
+
+  .finale-stat {
+    padding: 16px 24px;
+    border: 1px solid var(--gold);
+    background: rgba(184, 137, 58, 0.1);
+  }
+
+  .finale-stat-label {
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--gold);
+    margin-bottom: 6px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .finale-stat-value {
+    font-size: 28px;
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 700;
+    font-style: italic;
+  }
+
+  .finale-rank {
+    display: inline-block;
+    background: var(--gold);
+    color: var(--classified);
+    padding: 10px 24px;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 3px;
+    font-weight: 700;
+    margin: 20px 0;
+  }
+
+  .finale-btn {
+    padding: 14px 32px;
+    background: transparent;
+    color: var(--gold);
+    border: 2px solid var(--gold);
+    font-family: 'Special Elite', monospace;
+    font-size: 15px;
+    cursor: pointer;
+    letter-spacing: 2px;
+    transition: all 0.3s;
+    margin-top: 20px;
+  }
+
+  .finale-btn:hover {
+    background: var(--gold);
+    color: var(--classified);
+    transform: scale(1.05);
+  }
+
+  .confetti {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .confetti.active { animation: confettiFall 5s linear forwards; }
+
+  @keyframes confettiFall {
+    0% { opacity: 1; transform: translateY(-10vh) rotate(0deg); }
+    100% { opacity: 0; transform: translateY(110vh) rotate(720deg); }
+  }
+
+  @media (max-width: 600px) {
+    .stats { font-size: 11px; }
+    .modal { padding: 24px; }
+    h1 { font-size: 32px; }
+    .safe-container { width: 300px; }
+    .safe-wheel { width: 130px; height: 130px; }
+    .finale-quote { font-size: 17px; }
+  }
+
+  /* ========== СТАРТОВ ЕКРАН ========== */
+  .start-overlay {
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(circle at center, #2d2820 0%, #1a1612 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 300;
+    padding: 20px;
+    overflow-y: auto;
+  }
+
+  .start-overlay.hidden { display: none; }
+
+  .start-card {
+    background: var(--paper);
+    border: 3px double var(--ink);
+    padding: 40px 50px;
+    max-width: 600px;
+    width: 100%;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px var(--gold);
+    animation: paperDrop 0.8s ease-out;
+  }
+
+  .start-card h1 {
+    font-size: clamp(28px, 5vw, 42px);
+    margin-bottom: 10px;
+    text-align: center;
+  }
+
+  .start-card .subtitle {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+
+  .start-options {
+    display: grid;
+    gap: 16px;
+    margin-top: 24px;
+  }
+
+  .start-option {
+    padding: 20px 24px;
+    border: 2px solid var(--ink);
+    background: var(--paper);
+    cursor: pointer;
+    transition: all 0.25s;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    text-align: left;
+  }
+
+  .start-option:hover {
+    transform: translate(-3px, -3px);
+    box-shadow: 6px 6px 0 var(--gold);
+    border-color: var(--red-stamp);
+    background: rgba(184, 137, 58, 0.08);
+  }
+
+  .start-option-icon {
+    font-size: 36px;
+    flex-shrink: 0;
+  }
+
+  .start-option-text {
+    flex: 1;
+  }
+
+  .start-option-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .start-option-desc {
+    font-size: 13px;
+    color: var(--ink-faded);
+    margin-top: 4px;
+  }
+
+  .start-back {
+    background: none;
+    border: none;
+    color: var(--ink-faded);
+    font-family: 'Special Elite', monospace;
+    font-size: 13px;
+    cursor: pointer;
+    margin-bottom: 20px;
+    letter-spacing: 2px;
+  }
+
+  .start-back:hover { color: var(--red-stamp); }
+
+  .teams-setup {
+    margin-top: 20px;
+  }
+
+  .team-input-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    padding: 10px;
+    background: rgba(184, 137, 58, 0.08);
+    border-left: 4px solid var(--gold);
+  }
+
+  .team-color-dot {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    border: 2px solid var(--ink);
+  }
+
+  .team-input-row input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid var(--ink);
+    background: var(--paper);
+    font-family: 'Special Elite', monospace;
+    font-size: 15px;
+  }
+
+  .team-input-row input:focus {
+    outline: none;
+    border-color: var(--red-stamp);
+  }
+
+  /* ========== ОТБОРНА ТАБЛИЦА (по време на игра) ========== */
+  .teams-panel {
+    display: none;
+    gap: 10px;
+    padding: 12px 16px;
+    background: var(--classified);
+    border: 2px solid var(--gold);
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    position: sticky;
+    top: 70px;
+    z-index: 49;
+  }
+
+  .teams-panel.active { display: flex; }
+
+  .team-badge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    background: rgba(232, 223, 200, 0.08);
+    border: 2px solid transparent;
+    transition: all 0.3s;
+    min-width: 120px;
+  }
+
+  .team-badge.current-turn {
+    border-color: var(--gold-bright);
+    background: rgba(232, 182, 74, 0.2);
+    box-shadow: 0 0 20px rgba(232, 182, 74, 0.5);
+    animation: currentTeamPulse 2s ease-in-out infinite;
+  }
+
+  @keyframes currentTeamPulse {
+    0%, 100% { box-shadow: 0 0 20px rgba(232, 182, 74, 0.5); }
+    50% { box-shadow: 0 0 35px rgba(232, 182, 74, 0.8); }
+  }
+
+  .team-badge-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid var(--paper);
+    flex-shrink: 0;
+  }
+
+  .team-badge-info {
+    display: flex;
+    flex-direction: column;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .team-badge-name {
+    color: var(--paper);
+    font-size: 12px;
+    letter-spacing: 1px;
+  }
+
+  .team-badge-score {
+    color: var(--gold);
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  .team-badge-stations {
+    color: var(--paper-dark);
+    font-size: 10px;
+    letter-spacing: 2px;
+  }
+
+  /* Банер "Ред е на отбор X" */
+  .turn-banner {
+    display: none;
+    padding: 14px 20px;
+    text-align: center;
+    margin-bottom: 16px;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    font-weight: 700;
+    font-style: italic;
+    animation: bannerSlide 0.5s ease-out;
+  }
+
+  .turn-banner.active { display: block; }
+
+  @keyframes bannerSlide {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Бадж "Текущ отбор" в модала */
+  .modal-team-badge {
+    display: none;
+    padding: 8px 16px;
+    margin-bottom: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 2px;
+    border: 2px solid;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .modal-team-badge.active { display: block; }
+
+  /* Финално класиране на отбори */
+  .team-ranking {
+    display: none;
+    margin: 24px 0;
+  }
+
+  .team-ranking.active { display: block; }
+
+  .team-rank-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 18px;
+    margin-bottom: 10px;
+    border: 1px solid var(--gold);
+    background: rgba(232, 223, 200, 0.05);
+    color: var(--paper);
+  }
+
+  .team-rank-row:first-child {
+    border-color: var(--gold-bright);
+    background: rgba(232, 182, 74, 0.2);
+    animation: goldenGlow 2s ease-in-out infinite;
+  }
+
+  @keyframes goldenGlow {
+    0%, 100% { box-shadow: 0 0 10px rgba(232, 182, 74, 0.4); }
+    50% { box-shadow: 0 0 30px rgba(232, 182, 74, 0.8); }
+  }
+
+  .team-rank-pos {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 28px;
+    font-weight: 700;
+    font-style: italic;
+    color: var(--gold);
+    min-width: 40px;
+  }
+
+  .team-rank-color {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid var(--paper);
+  }
+
+  .team-rank-name {
+    flex: 1;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  .team-rank-score {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--gold-bright);
+  }
+</style>
+</head>
+<body>
+
+<!-- ========== СТАРТОВ ЕКРАН ========== -->
+<div class="start-overlay" id="startOverlay">
+  <div class="start-card" id="startCardMode">
+    <span class="classified-tag">ДОСИЕ № 314 · ЕВКЛИД</span>
+    <h1>Мисия: <span class="ornament">Окръжност</span></h1>
+    <div class="subtitle">— Избери режим на мисията —</div>
+
+    <div class="start-options">
+      <div class="start-option" onclick="selectMode('single')">
+        <div class="start-option-icon">🕵️</div>
+        <div class="start-option-text">
+          <div class="start-option-title">Самостоятелна мисия</div>
+          <div class="start-option-desc">Един играч, шест задачи, шест ключа. Ти срещу сейфа на Евклид.</div>
+        </div>
+      </div>
+      <div class="start-option" onclick="selectMode('team')">
+        <div class="start-option-icon">👥</div>
+        <div class="start-option-text">
+          <div class="start-option-title">Отборна мисия</div>
+          <div class="start-option-desc">2, 3 или 6 отбора се редуват. Всички отключват сейфа заедно, но точките се броят поотделно.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="start-card hidden" id="startCardTeams">
+    <button class="start-back" onclick="backToModeSelect()">← обратно</button>
+    <h1 style="font-size: 28px;">Колко отбора?</h1>
+    <div class="subtitle">Изборът определя колко задачи получава всеки отбор.</div>
+
+    <div class="start-options">
+      <div class="start-option" onclick="selectTeamCount(2)">
+        <div class="start-option-icon">⚔️</div>
+        <div class="start-option-text">
+          <div class="start-option-title">2 отбора</div>
+          <div class="start-option-desc">Всеки отбор получава по <strong>3</strong> задачи. Дуел на умове.</div>
+        </div>
+      </div>
+      <div class="start-option" onclick="selectTeamCount(3)">
+        <div class="start-option-icon">🎯</div>
+        <div class="start-option-text">
+          <div class="start-option-title">3 отбора</div>
+          <div class="start-option-desc">Всеки отбор получава по <strong>2</strong> задачи. Балансирано и динамично.</div>
+        </div>
+      </div>
+      <div class="start-option" onclick="selectTeamCount(6)">
+        <div class="start-option-icon">🏆</div>
+        <div class="start-option-text">
+          <div class="start-option-title">6 отбора</div>
+          <div class="start-option-desc">Всеки отбор получава по <strong>1</strong> задача. Един шанс да блеснеш.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="start-card hidden" id="startCardNames">
+    <button class="start-back" onclick="backToTeamCount()">← обратно</button>
+    <h1 style="font-size: 28px;">Имена на отборите</h1>
+    <div class="subtitle">Редактирай или остави както е и натисни СТАРТ.</div>
+
+    <div class="teams-setup" id="teamsSetup"></div>
+
+    <div style="text-align: center; margin-top: 24px;">
+      <button class="btn" onclick="startTeamGame()" style="padding: 14px 40px; font-size: 16px;">▸ СТАРТ НА МИСИЯТА ◂</button>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="intro">
+    <div class="stamp">СЕКРЕТНО</div>
+    <span class="classified-tag">ДОСИЕ № 314 · ЕВКЛИД</span>
+    <h1>Мисия: <span class="ornament">Окръжност</span></h1>
+    <div class="subtitle">— Тайната на изгубения шифър —</div>
+
+    <div class="briefing">
+      <strong>ИНСТРУКТАЖ:</strong> Агенте, преди повече от <strong>2300 години</strong> в Александрия древногръцкият математик <em>Евклид</em> написва тринадесет книги, наречени <em>Елементи</em> (Στοιχεῖα). <strong>Книга III</strong> от тях е посветена изцяло на окръжността и съдържа 37 теореми, които са в основата на съвременната геометрия.
+      <br><br>
+      Шест от тези теореми са скрити като ключове в този сейф. Всяка станция ще провери дали разбираш една реална теорема от <em>Елементите</em>:
+      <br>
+      <span style="font-size: 13px; line-height: 1.8; display: inline-block; margin-top: 6px;">
+      🔑 <strong>Станция I</strong> — Кн. III, Твърдение 20 (централен и вписан ъгъл)<br>
+      🔑 <strong>Станция II</strong> — Кн. III, Твърдения 26-27 (равни дъги — равни ъгли)<br>
+      🔑 <strong>Станция III</strong> — Кн. III, Твърдения 3 и 35 (диаметър и хорди)<br>
+      🔑 <strong>Станция IV</strong> — Кн. III, Твърдение 22 (вписан четириъгълник)<br>
+      🔑 <strong>Станция V</strong> — Кн. III, Твърдения 18 и 36 (допирателни от точка)<br>
+      🔑 <strong>Станция VI</strong> — Кн. III, Твърдение 32 (допирателна и хорда)
+      </span>
+      <br><br>
+      <strong>🎲 ВАЖНО:</strong> Всяка нова мисия генерира <strong>случайни задачи</strong> — кодът се променя всеки път!
+      <br><br>
+      <strong>⚠ ПРАВИЛА:</strong><br>
+      • Правилен отговор: <em>+100 точки</em> (намалява с жокер/грешки)<br>
+      • <strong style="color: var(--red-alert);">Грешен отговор: −25 точки и +30 сек. наказание</strong><br>
+      • <strong style="color: var(--red-alert);">Три грешки подред → заключване за 15 сек.</strong><br>
+      • Жокер: намалява наградата с 50 точки
+      <br><br>
+      <strong id="teamModeBriefing" style="display: none; color: var(--gold);">
+        👥 ОТБОРЕН РЕЖИМ: Станциите се разпределят случайно между отборите. Ако отбор сбърка, станцията преминава към следващия отбор, а сбъркалият губи 15 точки и получава +20 секунди наказание.
+      </strong>
+    </div>
+
+    <div class="code-display">
+      <div class="code-label">▸ ТАЕН КОД НА СЕЙФА ◂</div>
+      <div class="code-digits" id="codeDisplay">
+        <div class="code-digit" data-pos="0">?</div>
+        <div class="code-digit" data-pos="1">?</div>
+        <div class="code-digit" data-pos="2">?</div>
+        <div class="code-digit" data-pos="3">?</div>
+        <div class="code-digit" data-pos="4">?</div>
+        <div class="code-digit" data-pos="5">?</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Панел за отбори -->
+  <div class="teams-panel" id="teamsPanel"></div>
+
+  <!-- Банер "Ред е на отбор X" -->
+  <div class="turn-banner" id="turnBanner"></div>
+
+  <div class="stats">
+    <div class="stat-item">
+      <span class="stat-label">ВРЕМЕ:</span>
+      <span class="stat-value timer-value" id="timer">00:00</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-label">РАЗКОДИРАНИ:</span>
+      <span class="stat-value"><span id="solvedCount">0</span>/6</span>
+    </div>
+    <div class="stat-item" id="scoreItem">
+      <span class="stat-label">ТОЧКИ:</span>
+      <span class="stat-value" id="score">0</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-label">ЖОКЕРИ:</span>
+      <span class="stat-value" id="hintsUsed">0</span>
+    </div>
+  </div>
+
+  <div class="stations-grid" id="stationsGrid"></div>
+
+</div>
+
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal" id="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-team-badge" id="modalTeamBadge">ОТБОР —</div>
+    <div class="modal-num" id="modalNum">СТАНЦИЯ I</div>
+    <h2 id="modalTitle">—</h2>
+    <div class="problem-box" id="modalProblem">—</div>
+    <div class="diagram" id="modalDiagram"></div>
+    <div class="answer-row">
+      <span class="answer-label" id="answerLabel">Отговор:</span>
+      <input type="text" class="answer-input" id="answerInput" placeholder="въведи числото...">
+      <button class="btn" onclick="checkAnswer()">ПОТВЪРДИ</button>
+      <button class="hint-btn" id="hintBtn" onclick="showHint()">💡 Жокер</button>
+    </div>
+    <div class="attempts-indicator">
+      <span>Опити:</span>
+      <div class="attempt-dot" id="attempt-0"></div>
+      <div class="attempt-dot" id="attempt-1"></div>
+      <div class="attempt-dot" id="attempt-2"></div>
+      <span style="margin-left: 8px; font-style: italic;">При 3 грешки — 15 секунди заключване</span>
+    </div>
+    <div class="hint-box" id="hintBox"></div>
+    <div class="feedback" id="feedback"></div>
+    <div class="penalty-stamp" id="penaltyStamp">✗ ГРЕШКА</div>
+    <div class="lockout-overlay" id="lockoutOverlay">
+      <div class="lockout-title">⚠ СТАНЦИЯТА Е БЛОКИРАНА ⚠</div>
+      <div class="lockout-msg">Три поредни грешки. Евклид те наказва. Прегледай теоремата и опитай отново.</div>
+      <div class="lockout-timer" id="lockoutTimer">15</div>
+      <div class="lockout-msg">Часовникът на мисията продължава да тече...</div>
+    </div>
+  </div>
+</div>
+
+<div class="finale-overlay" id="finaleOverlay">
+  <div class="safe-container" id="safeContainer">
+    <div class="safe-door" id="safeDoor">
+      <div class="safe-code-display" id="safeCodeDisplay">??????</div>
+      <div class="safe-wheel"></div>
+    </div>
+    <div class="light-beam" id="lightBeam"></div>
+    <div class="rays" id="rays"></div>
+  </div>
+  <div class="finale-content" id="finaleContent">
+    <div class="finale-title">СЕЙФЪТ Е ОТВОРЕН</div>
+    <div class="finale-quote" id="finaleQuote">Не съществува царски път към геометрията.</div>
+    <div class="finale-author">— ЕВКЛИД, ~300 г. пр. Хр.</div>
+    <div class="finale-stats" id="finaleStatsBlock">
+      <div class="finale-stat">
+        <div class="finale-stat-label">ВРЕМЕ</div>
+        <div class="finale-stat-value" id="finalTime">—</div>
+      </div>
+      <div class="finale-stat">
+        <div class="finale-stat-label">ТОЧКИ</div>
+        <div class="finale-stat-value" id="finalScore">—</div>
+      </div>
+      <div class="finale-stat">
+        <div class="finale-stat-label">ЖОКЕРИ</div>
+        <div class="finale-stat-value" id="finalHints">—</div>
+      </div>
+    </div>
+    <div class="team-ranking" id="teamRanking"></div>
+    <div class="finale-rank" id="finaleRank">РАНГ: АГЕНТ-ГЕОМЕТЪР</div>
+    <br>
+    <button class="finale-btn" onclick="location.reload()">▸ НОВА МИСИЯ ◂</button>
+  </div>
+</div>
+
+<script>
+// ================ ГЕНЕРАТОРИ НА ЗАДАЧИ ================
+// Всяка станция има няколко варианта. При стартиране се избира случаен.
+// Това означава, че двама играчи могат да получат различни видове задачи.
+
+function randInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function pickRandom(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+// ============ СТАНЦИЯ 1: ЦЕНТРАЛЕН И ВПИСАН ЪГЪЛ ============
+
+// Вариант 1А: Даден вписан → намери централен
+function station1_variantA() {
+  const inscribed = pickRandom([12,14,16,18,22,24,26,28,32,34,36,38,42,44]);
+  const central = 2 * inscribed;
+  return {
+    problem: `На чертежа точките A, B, C лежат върху окръжност с център O. Вписаният ъгъл ∠ACB = ${inscribed}°, а централният ъгъл ∠AOB гледа към същата дъга AB. Намери мярката на централния ъгъл ∠AOB (в градуси).`,
+    diagram: `
+      <svg viewBox="0 0 300 260" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="150" cy="130" r="100" fill="none" stroke="#1a1612" stroke-width="2"/>
+        <circle cx="150" cy="130" r="3" fill="#1a1612"/>
+        <text x="158" y="128" font-family="Cormorant Garamond" font-size="18" font-style="italic">O</text>
+        <circle cx="65" cy="183" r="4.5" fill="#8b2a1f"/>
+        <text x="45" y="200" font-family="Cormorant Garamond" font-size="20" font-weight="700">A</text>
+        <circle cx="235" cy="183" r="4.5" fill="#8b2a1f"/>
+        <text x="245" y="200" font-family="Cormorant Garamond" font-size="20" font-weight="700">B</text>
+        <circle cx="150" cy="30" r="4.5" fill="#8b2a1f"/>
+        <text x="142" y="22" font-family="Cormorant Garamond" font-size="20" font-weight="700">C</text>
+        <line x1="150" y1="30" x2="65" y2="183" stroke="#1a1612" stroke-width="1.5"/>
+        <line x1="150" y1="30" x2="235" y2="183" stroke="#1a1612" stroke-width="1.5"/>
+        <line x1="150" y1="130" x2="65" y2="183" stroke="#8b2a1f" stroke-width="1.5" stroke-dasharray="4,3"/>
+        <line x1="150" y1="130" x2="235" y2="183" stroke="#8b2a1f" stroke-width="1.5" stroke-dasharray="4,3"/>
+        <path d="M 135 55 A 25 25 0 0 0 165 55" fill="none" stroke="#1a1612" stroke-width="1.5"/>
+        <text x="138" y="75" font-family="JetBrains Mono" font-size="13">${inscribed}°</text>
+        <path d="M 115 150 A 25 25 0 0 0 185 150" fill="none" stroke="#c23616" stroke-width="2"/>
+        <text x="142" y="173" font-family="JetBrains Mono" font-size="13" fill="#c23616" font-weight="700">?</text>
+      </svg>`,
+    answerLabel: "∠AOB = ",
+    answer: central,
+    hint: "📜 Евклид, Елементи, Книга III, Твърдение 20: 'Централният ъгъл е два пъти по-голям от вписания, когато двата гледат една и съща дъга.' Значи ∠AOB = 2 · ∠ACB.",
+    digit: central % 10
+  };
+}
+
+// Вариант 1Б: Даден централен → намери вписан
+function station1_variantB() {
+  const inscribed = pickRandom([14,17,19,23,26,29,31,33,37,41,43,46]);
+  const central = 2 * inscribed;
+  return {
+    problem: `На чертежа точките A, B, C лежат върху окръжност с център O. Централният ъгъл ∠AOB = ${central}°. Намери мярката на вписания ъгъл ∠ACB (в градуси), който гледа към същата дъга AB.`,
+    diagram: `
+      <svg viewBox="0 0 300 260" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="150" cy="130" r="100" fill="none" stroke="#1a1612" stroke-width="2"/>
+        <circle cx="150" cy="130" r="3" fill="#1a1612"/>
+        <text x="158" y="128" font-family="Cormorant Garamond" font-size="18" font-style="italic">O</text>
+        <circle cx="65" cy="183" r="4.5" fill="#8b2a1f"/>
+        <text x="45" y="200" font-family="Cormorant Garamond" font-size="20" font-weight="700">A</text>
+        <circle cx="235" cy="183" r="4.5" fill="#8b2a1f"/>
+        <text x="245" y="200" font-family="Cormorant Garamond" font-size="20" font-weight="700">B</text>
+        <circle cx="150" cy="30" r="4.5" fill="#8b2a1f"/>
+        <text x="142" y="22" font-family="Cormorant Garamond" font-size="20" font-weight="700">C</text>
+        <line x1="150" y1="30" x2="65" y2="183" stroke="#1a1612" stroke-width="1.5"/>
+        <line x1="150" y1="30" x2="235" y2="183" stroke="#1a1612" stroke-width="1.5"/>
+        <line x1="150" y1="130" x2="65" y2="183" stroke="#8b2a1f" stroke-width="1.5" stroke-dasharray="4,3"/>
+        <line x1="150" y1="130" x2="235" y2="183" stroke="#8b2a1f" stroke-width="1.5" stroke-dasharray="4,3"/>
+        <path d="M 135 55 A 25 25 0 0 0 165 55" fill="none" stroke="#c23616" stroke-width="2"/>
+        <text x="142" y="75" font-family="JetBrains Mono" font-size="13" fill="#c23616" font-weight="700">?</text>
+        <path d="M 115 150 A 25 25 0 0 0 185 150" fill="none" stroke="#8b2a1f" stroke-width="1.5"/>
+        <text x="138" y="173" font-family="JetBrains Mono" font-size="13" fill="#8b2a1f">${central}°</text>
+      </svg>`,
+    answerLabel: "∠ACB = ",
+    answer: inscribed,
+    hint: "📜 Евклид, Елементи, Книга III, Твърдение 20: 'Централният ъгъл е двойно по-голям от вписания при обща дъга.' Значи ∠ACB = ∠AOB / 2.",
+    digit: inscribed % 10
+  };
+}
+
+function generateStation1() {
+  return pickRandom([station1_variantA, station1_variantB])();
+}
+
+// ============ СТАНЦИЯ 2: ЧАСОВНИК ============
+
+// Вариант 2А: Дадени минути → намери ъгъл
+function station2_variantA() {
+  const minutes = pickRandom([7, 11, 13, 17, 19, 23, 29]);
+  const angle = 6 * minutes;
+  const angleMath = 90 - 6 * minutes;
+  const t = angleMath * Math.PI / 180;
+  const mx = 130 + 88 * Math.cos(t);
+  const my = 130 - 88 * Math.sin(t);
+  return {
+    problem: `Минутната стрелка на стар часовник започва движението си точно от ХІІ часа. Колко градуса описва тя, докато се премести до ${minutes}-та минута?`,
+    diagram: `
+      <svg viewBox="0 0 260 260" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="130" cy="130" r="110" fill="#faf6ec" stroke="#1a1612" stroke-width="3"/>
+        <circle cx="130" cy="130" r="110" fill="none" stroke="#b8893a" stroke-width="1" stroke-dasharray="2,2"/>
+        <g font-family="Cormorant Garamond" font-size="20" font-weight="700" text-anchor="middle">
+          <text x="130" y="32">XII</text>
+          <text x="220" y="138">III</text>
+          <text x="130" y="240">VI</text>
+          <text x="40" y="138">IX</text>
+        </g>
+        <circle cx="130" cy="42" r="5" fill="#1a1612"/>
+        <path d="M 130 42 A 88 88 0 ${minutes > 30 ? 1 : 0} 1 ${mx.toFixed(1)} ${my.toFixed(1)}" fill="none" stroke="#8b2a1f" stroke-width="3"/>
+        <line x1="130" y1="130" x2="${mx.toFixed(1)}" y2="${my.toFixed(1)}" stroke="#8b2a1f" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="130" cy="130" r="6" fill="#1a1612"/>
+        <text x="130" y="75" text-anchor="middle" font-family="JetBrains Mono" font-size="13" fill="#c23616" font-weight="700">?°</text>
+        <text x="130" y="258" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#b8893a">${minutes}-та минута</text>
+      </svg>`,
+    answerLabel: "Ъгъл = ",
+    answer: angle,
+    hint: `📜 Следствие от Евклид, Елементи, Кн. III, Твърдение 26: 'На равни централни ъгли в равни окръжности съответстват равни дъги.' Пълният циферблат (360°) се изминава за 60 минути, значи за 1 минута стрелката описва 360°/60 = 6°. За ${minutes} минути → 6° × ${minutes}.`,
+    digit: angle % 10
+  };
+}
+
+// Вариант 2Б: Даден ъгъл → намери минутите
+function station2_variantB() {
+  const minutes = pickRandom([8, 13, 17, 22, 26, 31]);
+  const angle = 6 * minutes;
+  const angleMath = 90 - 6 * minutes;
+  const t = angleMath * Math.PI / 180;
+  const mx = 130 + 88 * Math.cos(t);
+  const my = 130 - 88 * Math.sin(t);
+  return {
+    problem: `Минутната стрелка на стар часовник започва движението си точно от ХІІ часа и описва дъга с мярка ${angle}°. До коя минута е стигнала стрелката?`,
+    diagram: `
+      <svg viewBox="0 0 260 260" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="130" cy="130" r="110" fill="#faf6ec" stroke="#1a1612" stroke-width="3"/>
+        <circle cx="130" cy="130" r="110" fill="none" stroke="#b8893a" stroke-width="1" stroke-dasharray="2,2"/>
+        <g font-family="Cormorant Garamond" font-size="20" font-weight="700" text-anchor="middle">
+          <text x="130" y="32">XII</text>
+          <text x="220" y="138">III</text>
+          <text x="130" y="240">VI</text>
+          <text x="40" y="138">IX</text>
+        </g>
+        <circle cx="130" cy="42" r="5" fill="#1a1612"/>
+        <path d="M 130 42 A 88 88 0 ${minutes > 30 ? 1 : 0} 1 ${mx.toFixed(1)} ${my.toFixed(1)}" fill="none" stroke="#8b2a1f" stroke-width="3"/>
+        <line x1="130" y1="130" x2="${mx.toFixed(1)}" y2="${my.toFixed(1)}" stroke="#8b2a1f" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="130" cy="130" r="6" fill="#1a1612"/>
+        <text x="130" y="75" text-anchor="middle" font-family="JetBrains Mono" font-size="13" fill="#8b2a1f" font-weight="700">${angle}°</text>
+        <text x="130" y="258" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#c23616" font-weight="700">?-та минута</text>
+      </svg>`,
+    answerLabel: "Минута = ",
+    answer: minutes,
+    hint: `📜 Следствие от Евклид, Кн. III, Твърдение 27: 'На равни дъги съответстват равни ъгли.' Обратна задача: за 1 минута → 6°, значи минути = ъгъл ÷ 6.`,
+    digit: minutes % 10
+  };
+}
+
+function generateStation2() {
+  return pickRandom([station2_variantA, station2_variantB])();
+}
+
+// ============ СТАНЦИЯ 3: ХОРДИ И ДИАМЕТЪР ============
+
+// Вариант 3А: Две дъги → ъгъл между пресичащи се хорди
+function station3_variantA() {
+  const evenArcs = [32, 46, 58, 74, 86, 92, 104, 116];
+  const otherEvenArcs = [24, 38, 54, 62, 76, 84];
+  const arc1 = pickRandom(evenArcs);
+  const arc2 = pickRandom(otherEvenArcs);
+  const angle = (arc1 + arc2) / 2;
+  return {
+    problem: `Две хорди AB и CD на окръжност се пресичат в точка M във вътрешността на окръжността. Дъгата AC = ${arc1}°, а дъгата BD = ${arc2}°. Намери ъгъла ∠AMC (в градуси), образуван от хордите в точка M.`,
+    diagram: `
+      <svg viewBox="0 0 320 280" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="160" cy="140" r="110" fill="none" stroke="#1a1612" stroke-width="2"/>
+        <line x1="64.7" y1="85" x2="244.3" y2="210.7" stroke="#1a1612" stroke-width="2"/>
+        <line x1="230.7" y1="55.7" x2="75.7" y2="210.7" stroke="#8b2a1f" stroke-width="2"/>
+        <circle cx="145.1" cy="141.3" r="4" fill="#1a1612"/>
+        <text x="152" y="138" font-family="Cormorant Garamond" font-size="18" font-weight="700">M</text>
+        <circle cx="64.7" cy="85" r="4.5" fill="#1a1612"/>
+        <text x="44" y="82" font-family="Cormorant Garamond" font-size="20" font-weight="700">A</text>
+        <circle cx="244.3" cy="210.7" r="4.5" fill="#1a1612"/>
+        <text x="254" y="220" font-family="Cormorant Garamond" font-size="20" font-weight="700">B</text>
+        <circle cx="230.7" cy="55.7" r="4.5" fill="#8b2a1f"/>
+        <text x="240" y="52" font-family="Cormorant Garamond" font-size="20" font-weight="700" fill="#8b2a1f">C</text>
+        <circle cx="75.7" cy="210.7" r="4.5" fill="#8b2a1f"/>
+        <text x="54" y="222" font-family="Cormorant Garamond" font-size="20" font-weight="700" fill="#8b2a1f">D</text>
+        <path d="M 64.7 85 A 110 110 0 0 1 230.7 55.7" fill="none" stroke="#b8893a" stroke-width="3.5"/>
+        <text x="165" y="30" text-anchor="middle" font-family="JetBrains Mono" font-size="13" fill="#b8893a" font-weight="700">дъга AC = ${arc1}°</text>
+        <path d="M 244.3 210.7 A 110 110 0 0 1 75.7 210.7" fill="none" stroke="#b8893a" stroke-width="3.5"/>
+        <text x="160" y="268" text-anchor="middle" font-family="JetBrains Mono" font-size="13" fill="#b8893a" font-weight="700">дъга BD = ${arc2}°</text>
+        <path d="M 130 131 A 18 18 0 0 1 163 126" fill="none" stroke="#c23616" stroke-width="2"/>
+        <text x="140" y="123" font-family="JetBrains Mono" font-size="14" fill="#c23616" font-weight="700">?</text>
+      </svg>`,
+    answerLabel: "∠AMC = ",
+    answer: angle,
+    hint: "📜 Следствие от Евклид, Кн. III, Твърдение 35: ъгълът, образуван от две хорди, пресичащи се във вътрешността на окръжност, е равен на полусбора на двете дъги, които той и противоположният му ъгъл отсичат. ∠AMC = (дъга AC + дъга BD) / 2.",
+    digit: angle % 10
+  };
+}
+
+// Вариант 3Б: Ъгъл и една дъга → намери другата
+function station3_variantB() {
+  const arc1 = pickRandom([46, 58, 74, 86, 92, 104]);
+  const arc2 = pickRandom([24, 38, 54, 62, 76, 84]);
+  const angle = (arc1 + arc2) / 2;
+  return {
+    problem: `Две хорди AB и CD на окръжност се пресичат в точка M във вътрешността на окръжността. Ъгълът ∠AMC = ${angle}° и дъгата AC = ${arc1}°. Намери мярката на дъгата BD (в градуси).`,
+    diagram: `
+      <svg viewBox="0 0 320 280" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="160" cy="140" r="110" fill="none" stroke="#1a1612" stroke-width="2"/>
+        <line x1="64.7" y1="85" x2="244.3" y2="210.7" stroke="#1a1612" stroke-width="2"/>
+        <line x1="230.7" y1="55.7" x2="75.7" y2="210.7" stroke="#8b2a1f" stroke-width="2"/>
+        <circle cx="145.1" cy="141.3" r="4" fill="#1a1612"/>
+        <text x="152" y="138" font-family="Cormorant Garamond" font-size="18" font-weight="700">M</text>
+        <circle cx="64.7" cy="85" r="4.5" fill="#1a1612"/>
+        <text x="44" y="82" font-family="Cormorant Garamond" font-size="20" font-weight="700">A</text>
+        <circle cx="244.3" cy="210.7" r="4.5" fill="#1a1612"/>
+        <text x="254" y="220" font-family="Cormorant Garamond" font-size="20" font-weight="700">B</text>
+        <circle cx="230.7" cy="55.7" r="4.5" fill="#8b2a1f"/>
+        <text x="240" y="52" font-family="Cormorant Garamond" font-size="20" font-weight="700" fill="#8b2a1f">C</text>
+        <circle cx="75.7" cy="210.7" r="4.5" fill="#8b2a1f"/>
+        <text x="54" y="222" font-family="Cormorant Garamond" font-size="20" font-weight="700" fill="#8b2a1f">D</text>
+        <path d="M 64.7 85 A 110 110 0 0 1 230.7 55.7" fill="none" stroke="#b8893a" stroke-width="3.5"/>
+        <text x="165" y="30" text-anchor="middle" font-family="JetBrains Mono" font-size="13" fill="#b8893a" font-weight="700">дъга AC = ${arc1}°</text>
+        <path d="M 244.3 210.7 A 110 110 0 0 1 75.7 210.7" fill="none" stroke="#c23616" stroke-width="3.5"/>
+        <text x="160" y="268" text-anchor="middle" font-family="JetBrains Mono" font-size="13" fill="#c23616" font-weight="700">дъга BD = ?</text>
+        <path d="M 130 131 A 18 18 0 0 1 163 126" fill="none" stroke="#8b2a1f" stroke-width="2"/>
+        <text x="140" y="123" font-family="JetBrains Mono" font-size="14" fill="#8b2a1f" font-weight="700">${angle}°</text>
+      </svg>`,
+    answerLabel: "дъга BD = ",
+    answer: arc2,
+    hint: `📜 Следствие от Евклид, Кн. III, Твърдение 35: ∠AMC = (дъга AC + дъга BD) / 2. От тук следва: дъга BD = 2 · ∠AMC − дъга AC.`,
+    digit: arc2 % 10
+  };
+}
+
+// Вариант 3В: Перпендикулярни хорди — правоъгълник OPMQ (без Питагор)
+// Дадени AB и AM, намира се OQ (разстояние от центъра до другата хорда)
+function station3_variantC() {
+  // Триплети (AB, AM, OQ), подбрани за разнообразни единици цифри
+  const triplets = [
+    { AB: 16, AM: 7, OQ: 1 },
+    { AB: 18, AM: 7, OQ: 2 },
+    { AB: 20, AM: 7, OQ: 3 },
+    { AB: 22, AM: 8, OQ: 3 },
+    { AB: 24, AM: 8, OQ: 4 },
+    { AB: 26, AM: 9, OQ: 4 },
+    { AB: 28, AM: 9, OQ: 5 },
+    { AB: 32, AM: 11, OQ: 5 },
+    { AB: 30, AM: 9, OQ: 6 },
+    { AB: 40, AM: 14, OQ: 6 },
+    { AB: 34, AM: 10, OQ: 7 },
+    { AB: 42, AM: 14, OQ: 7 },
+    { AB: 36, AM: 10, OQ: 8 },
+    { AB: 44, AM: 14, OQ: 8 },
+    { AB: 38, AM: 10, OQ: 9 }
+  ];
+  const t = pickRandom(triplets);
+  const AB = t.AB, AM = t.AM, OQ = t.OQ;
+  const AP = AB / 2;  // P е среда на AB (защото OP ⊥ AB разполовява хордата)
+  const PM = AP - AM; // PM = AP − AM; OPMQ правоъгълник → OQ = PM
+
+  // Визуализация: центърът O е горе-вдясно, AB хоризонтална хорда, CD вертикална
+  // Окръжност (160, 150) радиус 100. AB е хоризонтална на y = 200; CD е вертикална на x = 200.
+  // Тогава P = среда на AB = (200, 200)? Не, P е петата на перпендикуляра от O до AB.
+  // Ако AB е хоризонтална на y = yAB, то P = (xO, yAB). Значи P е точно под O.
+  // OP = yAB − yO. Искам OP = MQ = някакво визуално разстояние.
+  // Нека O = (180, 130), AB хоризонтална на y = 180. Тогава OP = 50, P = (180, 180).
+  // CD вертикална на x = 140. Тогава OQ = 40, Q = (140, 130).
+  // M = пресечна точка на AB и CD = (140, 180).
+  // Проверка: OP = 50, OQ = 40. MP = |140 - 180| = 40 = OQ ✓ (правоъгълник). MQ = |180 - 130| = 50 = OP ✓.
+  // За тази задача: AB е хоризонтална отсечка, A отляво, B отдясно. AM е от A до M. M е пресечна точка.
+  // Нека A = (40, 180), B = (320, 180), значи AB визуално = 280 (в SVG единици)
+  // M = (140, 180) → AM визуално = 100, MB = 180
+  // Това дава отношение AM:MB = 100:180 = 5:9. За AB=18, AM=7: 7:11 ≈ 5:8 — приемливо.
+  // За по-точно съответствие: AM/AB * визуална AB = визуалната AM
+  // В този случай ще направя M динамичен според стойностите.
+
+  // Координатна система (SVG):
+  const cx = 180, cy = 140, R = 100;  // окръжност
+  const ABy = 210;  // ординатата на хордата AB
+  const CDx = 120;  // абсцисата на хордата CD
+  // Дължина на хордата AB визуално (от пресечната точка с окръжността отляво до отдясно):
+  // AB хоризонтална на y = ABy, пресича окръжност при x = cx ± √(R² − (ABy − cy)²)
+  const halfAB_visual = Math.sqrt(R*R - (ABy - cy)*(ABy - cy));
+  const Ax = cx - halfAB_visual, Ay = ABy;
+  const Bx = cx + halfAB_visual, By = ABy;
+  // CD вертикална на x = CDx, пресича окръжност при y = cy ± √(R² − (CDx − cx)²)
+  const halfCD_visual = Math.sqrt(R*R - (CDx - cx)*(CDx - cx));
+  const Cx = CDx, Cy = cy - halfCD_visual;
+  const Dx = CDx, Dy = cy + halfCD_visual;
+  // Пресечна точка M = (CDx, ABy)
+  const Mx = CDx, My = ABy;
+  // P = пета на перпендикуляра от O до AB = (cx, ABy)
+  const Px = cx, Py = ABy;
+  // Q = пета на перпендикуляра от O до CD = (CDx, cy)
+  const Qx = CDx, Qy = cy;
+
+  return {
+    problem: `В окръжност с център O са прекарани две взаимно перпендикулярни хорди AB и CD, пресичащи се в точка M. От центъра O са спуснати перпендикуляри до двете хорди: OP ⊥ AB (P ∈ AB) и OQ ⊥ CD (Q ∈ CD). Дадено е, че AB = ${AB} см и AM = ${AM} см. Намери дължината на отсечката OQ (в см). *Указание: погледни четириъгълника OPMQ.*`,
+    diagram: `
+      <svg viewBox="0 0 360 280" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="#1a1612" stroke-width="2"/>
+        <!-- Хорда AB (хоризонтална, черна) -->
+        <line x1="${Ax.toFixed(1)}" y1="${Ay}" x2="${Bx.toFixed(1)}" y2="${By}" stroke="#1a1612" stroke-width="2"/>
+        <circle cx="${Ax.toFixed(1)}" cy="${Ay}" r="4.5" fill="#1a1612"/>
+        <text x="${(Ax-18).toFixed(1)}" y="${Ay+6}" font-family="Cormorant Garamond" font-size="20" font-weight="700">A</text>
+        <circle cx="${Bx.toFixed(1)}" cy="${By}" r="4.5" fill="#1a1612"/>
+        <text x="${(Bx+8).toFixed(1)}" y="${By+6}" font-family="Cormorant Garamond" font-size="20" font-weight="700">B</text>
+        <!-- Хорда CD (вертикална, червена) -->
+        <line x1="${Cx}" y1="${Cy.toFixed(1)}" x2="${Dx}" y2="${Dy.toFixed(1)}" stroke="#8b2a1f" stroke-width="2"/>
+        <circle cx="${Cx}" cy="${Cy.toFixed(1)}" r="4.5" fill="#8b2a1f"/>
+        <text x="${Cx-20}" y="${(Cy-6).toFixed(1)}" font-family="Cormorant Garamond" font-size="20" font-weight="700" fill="#8b2a1f">C</text>
+        <circle cx="${Dx}" cy="${Dy.toFixed(1)}" r="4.5" fill="#8b2a1f"/>
+        <text x="${Dx-20}" y="${(Dy+18).toFixed(1)}" font-family="Cormorant Garamond" font-size="20" font-weight="700" fill="#8b2a1f">D</text>
+        <!-- Център O -->
+        <circle cx="${cx}" cy="${cy}" r="3.5" fill="#1a1612"/>
+        <text x="${cx+6}" y="${cy-6}" font-family="Cormorant Garamond" font-size="18" font-style="italic">O</text>
+        <!-- Пресечна точка M -->
+        <circle cx="${Mx}" cy="${My}" r="4" fill="#c23616"/>
+        <text x="${Mx-16}" y="${My+18}" font-family="Cormorant Garamond" font-size="18" font-weight="700" fill="#c23616">M</text>
+        <!-- Правоъгълник OPMQ (светло защрихован) -->
+        <polygon points="${cx},${cy} ${Px},${Py} ${Mx},${My} ${Qx},${Qy}" fill="rgba(184, 137, 58, 0.18)" stroke="#b8893a" stroke-width="1.5" stroke-dasharray="4,2"/>
+        <!-- Точка P (пета върху AB) -->
+        <circle cx="${Px}" cy="${Py}" r="3.5" fill="#b8893a"/>
+        <text x="${Px+5}" y="${Py+18}" font-family="Cormorant Garamond" font-size="16" font-weight="700" fill="#b8893a">P</text>
+        <!-- Точка Q (пета върху CD) -->
+        <circle cx="${Qx}" cy="${Qy}" r="3.5" fill="#b8893a"/>
+        <text x="${Qx-16}" y="${Qy-4}" font-family="Cormorant Garamond" font-size="16" font-weight="700" fill="#b8893a">Q</text>
+        <!-- Перпендикулярни знаци в ъглите на правоъгълника -->
+        <rect x="${Mx}" y="${My-10}" width="10" height="10" fill="none" stroke="#b8893a" stroke-width="1"/>
+        <rect x="${Qx}" y="${Qy}" width="10" height="10" fill="none" stroke="#b8893a" stroke-width="1"/>
+        <!-- Надписи -->
+        <text x="${cx}" y="${My+28}" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#1a1612">AB = ${AB} см</text>
+        <text x="${(Ax+Mx)/2}" y="${Ay-8}" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#8b2a1f" font-weight="700">AM = ${AM}</text>
+        <text x="${Qx-8}" y="${(cy+Qy)/2+5}" text-anchor="end" font-family="JetBrains Mono" font-size="13" fill="#c23616" font-weight="700">OQ = ?</text>
+      </svg>`,
+    answerLabel: "OQ = ",
+    answer: OQ,
+    hint: `📜 Евклид, Кн. III, Твърдение 3: 'Диаметърът, перпендикулярен на хорда, я разполовява.' Затова P е средата на AB, т.е. AP = AB/2 = ${AP} см. Тъй като AB ⊥ CD и OP ⊥ AB, OQ ⊥ CD, четириъгълникът OPMQ има четири прави ъгъла → той е правоъгълник. В правоъгълник срещуположните страни са равни, значи OQ = PM. А PM = AP − AM = ${AP} − ${AM} = ${OQ}.`,
+    digit: OQ % 10
+  };
+}
+
+function generateStation3() {
+  return pickRandom([station3_variantA, station3_variantB, station3_variantC])();
+}
+
+// ============ СТАНЦИЯ 4: ВПИСАН ЧЕТИРИЪГЪЛНИК ============
+
+// Вариант 4А: Дадени три ъгъла, намери четвъртия (стандартна)
+function station4_variantA() {
+  const B = pickRandom([103, 107, 112, 116, 118, 121, 123, 127, 129, 132, 136, 139, 143]);
+  const D = 180 - B;
+  const A = pickRandom([68, 72, 76, 82, 84, 88, 91, 94, 97]);
+  const C = 180 - A;
+  return {
+    problem: `Четириъгълникът ABCD е вписан в окръжност. Ъглите му са: ∠A = ${A}°, ∠B = ${B}°, ∠C = ${C}°. Намери ∠D (в градуси).`,
+    diagram: `
+      <svg viewBox="0 0 300 260" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="150" cy="130" r="100" fill="none" stroke="#1a1612" stroke-width="2"/>
+        <polygon points="56,95.8 200,43.4 244,164.2 115.8,224" fill="rgba(139,42,31,0.08)" stroke="#1a1612" stroke-width="2"/>
+        <circle cx="56" cy="95.8" r="4.5" fill="#1a1612"/>
+        <text x="34" y="94" font-family="Cormorant Garamond" font-size="22" font-weight="700">A</text>
+        <circle cx="200" cy="43.4" r="4.5" fill="#1a1612"/>
+        <text x="206" y="38" font-family="Cormorant Garamond" font-size="22" font-weight="700">B</text>
+        <circle cx="244" cy="164.2" r="4.5" fill="#1a1612"/>
+        <text x="252" y="170" font-family="Cormorant Garamond" font-size="22" font-weight="700">C</text>
+        <circle cx="115.8" cy="224" r="4.5" fill="#1a1612"/>
+        <text x="100" y="244" font-family="Cormorant Garamond" font-size="22" font-weight="700">D</text>
+        <text x="64" y="112" font-family="JetBrains Mono" font-size="12" fill="#8b2a1f">${A}°</text>
+        <text x="178" y="64" font-family="JetBrains Mono" font-size="12" fill="#8b2a1f">${B}°</text>
+        <text x="212" y="162" font-family="JetBrains Mono" font-size="12" fill="#8b2a1f">${C}°</text>
+        <text x="122" y="216" font-family="JetBrains Mono" font-size="13" fill="#c23616" font-weight="700">?</text>
+      </svg>`,
+    answerLabel: "∠D = ",
+    answer: D,
+    hint: "📜 Евклид, Елементи, Книга III, Твърдение 22: 'Срещуположните ъгли на четириъгълник, вписан в окръжност, имат сбор 180°.' Значи ∠B + ∠D = 180°, от където ∠D = 180° − ∠B.",
+    digit: D % 10
+  };
+}
+
+// Вариант 4Б: Даден ∠A, намери срещуположния ∠C (по-кратко дадени)
+function station4_variantB() {
+  const A = pickRandom([68, 72, 76, 81, 84, 87, 92, 97, 103, 108, 113]);
+  const C = 180 - A;
+  return {
+    problem: `Четириъгълникът ABCD е вписан в окръжност. Ъгълът ∠A = ${A}°. Намери мярката на срещуположния ъгъл ∠C (в градуси).`,
+    diagram: `
+      <svg viewBox="0 0 300 260" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="150" cy="130" r="100" fill="none" stroke="#1a1612" stroke-width="2"/>
+        <polygon points="56,95.8 200,43.4 244,164.2 115.8,224" fill="rgba(139,42,31,0.08)" stroke="#1a1612" stroke-width="2"/>
+        <circle cx="56" cy="95.8" r="4.5" fill="#1a1612"/>
+        <text x="34" y="94" font-family="Cormorant Garamond" font-size="22" font-weight="700">A</text>
+        <circle cx="200" cy="43.4" r="4.5" fill="#1a1612"/>
+        <text x="206" y="38" font-family="Cormorant Garamond" font-size="22" font-weight="700">B</text>
+        <circle cx="244" cy="164.2" r="4.5" fill="#1a1612"/>
+        <text x="252" y="170" font-family="Cormorant Garamond" font-size="22" font-weight="700">C</text>
+        <circle cx="115.8" cy="224" r="4.5" fill="#1a1612"/>
+        <text x="100" y="244" font-family="Cormorant Garamond" font-size="22" font-weight="700">D</text>
+        <text x="64" y="112" font-family="JetBrains Mono" font-size="13" fill="#8b2a1f" font-weight="700">${A}°</text>
+        <text x="214" y="162" font-family="JetBrains Mono" font-size="14" fill="#c23616" font-weight="700">?</text>
+      </svg>`,
+    answerLabel: "∠C = ",
+    answer: C,
+    hint: "📜 Евклид, Елементи, Книга III, Твърдение 22: 'Срещуположните ъгли на вписан четириъгълник имат сбор 180°.' Значи ∠A + ∠C = 180°.",
+    digit: C % 10
+  };
+}
+
+function generateStation4() {
+  return pickRandom([station4_variantA, station4_variantB])();
+}
+
+// ============ СТАНЦИЯ 5: ДВЕ ДОПИРАТЕЛНИ ОТ ВЪНШНА ТОЧКА ============
+
+// Вариант 5А: Даден централен → ∠APB
+function station5_variantA() {
+  const central = pickRandom([72, 86, 98, 104, 112, 128, 134, 146]);
+  const apb = 180 - central;
+  return {
+    problem: `От външна точка P са прекарани две допирателни PA и PB към окръжност с център O (A и B са допирните точки). Централният ъгъл ∠AOB = ${central}°. Намери ъгъла ∠APB (в градуси).`,
+    diagram: `
+      <svg viewBox="0 0 340 240" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="120" cy="120" r="70" fill="none" stroke="#1a1612" stroke-width="2"/>
+        <circle cx="120" cy="120" r="3" fill="#1a1612"/>
+        <text x="108" y="115" font-family="Cormorant Garamond" font-size="16" font-style="italic">O</text>
+        <circle cx="290" cy="120" r="4.5" fill="#8b2a1f"/>
+        <text x="300" y="125" font-family="Cormorant Garamond" font-size="22" font-weight="700">P</text>
+        <line x1="290" y1="120" x2="148" y2="56" stroke="#8b2a1f" stroke-width="2"/>
+        <circle cx="148" cy="56" r="4.5" fill="#1a1612"/>
+        <text x="130" y="48" font-family="Cormorant Garamond" font-size="20" font-weight="700">A</text>
+        <line x1="290" y1="120" x2="148" y2="184" stroke="#8b2a1f" stroke-width="2"/>
+        <circle cx="148" cy="184" r="4.5" fill="#1a1612"/>
+        <text x="130" y="205" font-family="Cormorant Garamond" font-size="20" font-weight="700">B</text>
+        <line x1="120" y1="120" x2="148" y2="56" stroke="#b8893a" stroke-width="1.5" stroke-dasharray="3,3"/>
+        <line x1="120" y1="120" x2="148" y2="184" stroke="#b8893a" stroke-width="1.5" stroke-dasharray="3,3"/>
+        <text x="100" y="130" font-family="JetBrains Mono" font-size="13" fill="#8b2a1f" font-weight="700">${central}°</text>
+        <text x="255" y="125" font-family="JetBrains Mono" font-size="14" fill="#c23616" font-weight="700">?</text>
+      </svg>`,
+    answerLabel: "∠APB = ",
+    answer: apb,
+    hint: "📜 Евклид, Кн. III, Твърдение 18: 'Допирателната е перпендикулярна на радиуса в допирната точка.' Следователно в четириъгълника OAPB имаме ∠OAP = ∠OBP = 90°. Сборът на ъглите в четириъгълник е 360°, значи ∠APB = 360° − 90° − 90° − ∠AOB = 180° − ∠AOB.",
+    digit: apb % 10
+  };
+}
+
+// Вариант 5Б: Даден ∠APB → намери централния ∠AOB
+function station5_variantB() {
+  const apb = pickRandom([34, 46, 52, 68, 74, 82, 94, 106, 108]);
+  const central = 180 - apb;
+  return {
+    problem: `От външна точка P са прекарани две допирателни PA и PB към окръжност с център O (A и B са допирните точки). Ъгълът ∠APB = ${apb}°. Намери централния ъгъл ∠AOB (в градуси).`,
+    diagram: `
+      <svg viewBox="0 0 340 240" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="120" cy="120" r="70" fill="none" stroke="#1a1612" stroke-width="2"/>
+        <circle cx="120" cy="120" r="3" fill="#1a1612"/>
+        <text x="108" y="115" font-family="Cormorant Garamond" font-size="16" font-style="italic">O</text>
+        <circle cx="290" cy="120" r="4.5" fill="#8b2a1f"/>
+        <text x="300" y="125" font-family="Cormorant Garamond" font-size="22" font-weight="700">P</text>
+        <line x1="290" y1="120" x2="148" y2="56" stroke="#8b2a1f" stroke-width="2"/>
+        <circle cx="148" cy="56" r="4.5" fill="#1a1612"/>
+        <text x="130" y="48" font-family="Cormorant Garamond" font-size="20" font-weight="700">A</text>
+        <line x1="290" y1="120" x2="148" y2="184" stroke="#8b2a1f" stroke-width="2"/>
+        <circle cx="148" cy="184" r="4.5" fill="#1a1612"/>
+        <text x="130" y="205" font-family="Cormorant Garamond" font-size="20" font-weight="700">B</text>
+        <line x1="120" y1="120" x2="148" y2="56" stroke="#b8893a" stroke-width="1.5" stroke-dasharray="3,3"/>
+        <line x1="120" y1="120" x2="148" y2="184" stroke="#b8893a" stroke-width="1.5" stroke-dasharray="3,3"/>
+        <text x="100" y="130" font-family="JetBrains Mono" font-size="14" fill="#c23616" font-weight="700">?</text>
+        <text x="248" y="125" font-family="JetBrains Mono" font-size="13" fill="#8b2a1f" font-weight="700">${apb}°</text>
+      </svg>`,
+    answerLabel: "∠AOB = ",
+    answer: central,
+    hint: "📜 Евклид, Кн. III, Тв. 18: радиусът е перпендикулярен на допирателната. В четириъгълника OAPB: ∠OAP = ∠OBP = 90°. Сборът е 360°, значи ∠AOB = 180° − ∠APB.",
+    digit: central % 10
+  };
+}
+
+// Вариант 5В: Ъгъл от две секущи от външна точка
+// Теорема: ∠P = (голяма_дъга − малка_дъга) / 2
+function station5_variantC() {
+  // Избираме две дъги — голяма AC (между далечните пресечени точки) и малка BD (между близките)
+  // Условие: big - small четно; стойностите да дават разнообразни ъгли
+  const pairs = [
+    { big: 110, small: 22 }, // 44
+    { big: 118, small: 28 }, // 45
+    { big: 124, small: 38 }, // 43
+    { big: 132, small: 22 }, // 55
+    { big: 138, small: 48 }, // 45
+    { big: 146, small: 42 }, // 52
+    { big: 152, small: 48 }, // 52
+    { big: 118, small: 34 }, // 42
+    { big: 124, small: 22 }, // 51
+    { big: 138, small: 28 }, // 55
+    { big: 146, small: 28 }, // 59
+    { big: 132, small: 38 }, // 47
+    { big: 110, small: 38 }, // 36
+    { big: 152, small: 42 }, // 55
+    { big: 124, small: 42 }  // 41
+  ];
+  const t = pickRandom(pairs);
+  const bigArc = t.big;
+  const smallArc = t.small;
+  const angle = (bigArc - smallArc) / 2;
+  return {
+    problem: `От външна точка P са прекарани две секущи към окръжност. Първата секуща пресича окръжността в точки A и B (като B е по-близо до P), а втората — в точки C и D (като D е по-близо до P). Голямата дъга AC (между далечните точки) е ${bigArc}°, а малката дъга BD (между близките точки) е ${smallArc}°. Намери ъгъла ∠APC при върха P (в градуси).`,
+    diagram: `
+      <svg viewBox="0 0 360 240" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="140" cy="120" r="80" fill="none" stroke="#1a1612" stroke-width="2"/>
+        <!-- Външна точка P -->
+        <circle cx="330" cy="120" r="4.5" fill="#8b2a1f"/>
+        <text x="340" y="125" font-family="Cormorant Garamond" font-size="22" font-weight="700">P</text>
+        <!-- Секуща 1: от P през B (близо) до A (далеч) — горен наклон -->
+        <!-- B = (140 + 80*cos(135°), 120 - 80*sin(135°)) = (82.43, 63.43) ... всъщност нужно е близките да са към P -->
+        <!-- По-лесно: нека B = (195, 62) (близка до P), A = (76, 92) (далечна от P) -->
+        <!-- Проверка: разстояние от (140,120) — трябва да е 80 -->
+        <!-- (195-140)² + (62-120)² = 55² + 58² = 3025+3364 = 6389 ≠ 6400 -->
+        <!-- Ще използвам точни стойности: ъгли по окръжността -->
+        <!-- A на 160°, B на 60°, C на 200°, D на 300° (в стандартна математическа нотация) -->
+        <!-- A = (140 + 80·cos160°, 120 - 80·sin160°) = (140 - 75.18, 120 - 27.36) = (64.82, 92.64) -->
+        <!-- B = (140 + 80·cos60°, 120 - 80·sin60°) = (140 + 40, 120 - 69.28) = (180, 50.72) -->
+        <!-- C = (140 + 80·cos200°, 120 - 80·sin200°) = (140 - 75.18, 120 + 27.36) = (64.82, 147.36) -->
+        <!-- D = (140 + 80·cos300°, 120 - 80·sin300°) = (140 + 40, 120 + 69.28) = (180, 189.28) -->
+        <!-- Секуща 1: P(330,120) → B(180,50.7) → A(64.8,92.6). Проверка колинеарност: (180-330)/(50.7-120) = -150/-69.3 = 2.16; (64.8-330)/(92.6-120) = -265.2/-27.4 = 9.68 — НЕ колинеарни! -->
+        <!-- Трябва избор на A, B върху окръжността и колинеарни с P. Това изисква специален подход. -->
+        <!-- Нека кажа P = (330, 120). Секуща, минаваща през P: y = 120 + m(x-330). -->
+        <!-- Пресичане с окръжност (x-140)² + (y-120)² = 80²: -->
+        <!-- (x-140)² + m²(x-330)² = 6400 -->
+        <!-- За m = -0.3 (лек наклон нагоре към окръжността): -->
+        <!-- (x-140)² + 0.09(x-330)² = 6400 -->
+        <!-- x² - 280x + 19600 + 0.09(x² - 660x + 108900) = 6400 -->
+        <!-- x² - 280x + 19600 + 0.09x² - 59.4x + 9801 = 6400 -->
+        <!-- 1.09x² - 339.4x + 23001 = 0 -->
+        <!-- дискриминант = 339.4² - 4·1.09·23001 = 115192 - 100284 = 14908; √14908 ≈ 122.1 -->
+        <!-- x = (339.4 ± 122.1)/2.18 ≈ 211.7 или 99.7 -->
+        <!-- За x = 211.7: y = 120 - 0.3*(211.7-330) = 120 + 35.5 = 155.5 (долу-дясно) -->
+        <!-- За x = 99.7: y = 120 - 0.3*(99.7-330) = 120 + 69.1 = 189.1... извън окръжността вероятно -->
+        <!-- Нека опростим: ще сложа две секущи с разумни ъгли и фиксирани точки, близо колинеарни с P -->
+        <!-- Секуща 1 (горна): наклон -0.4. Пресечни точки изчислени: -->
+        <!-- (x-140)² + 0.16(x-330)² = 6400 -->
+        <!-- 1.16x² - 2*140x - 2*0.16*330x + 140² + 0.16*330² - 6400 = 0 -->
+        <!-- 1.16x² - 280x - 105.6x + 19600 + 17424 - 6400 = 0 -->
+        <!-- 1.16x² - 385.6x + 30624 = 0 -->
+        <!-- диск = 148687 - 142096 = 6591; √ ≈ 81.2; x = (385.6 ± 81.2)/2.32 = 201.2 или 131.2 -->
+        <!-- y за x=201.2: 120 - 0.4*(201.2-330) = 120 + 51.5 = 171.5 (това е долу-дясно) -->
+        <!-- y за x=131.2: 120 - 0.4*(131.2-330) = 120 + 79.5 = 199.5 (долу-ляво) -->
+        <!-- Това не работи както искам. Вместо това, ще направя P отляво на окръжността и двете секущи да вървят наклонено. -->
+        <!-- По-простo: P = (330, 120). Долна секуща наклон +0.4 (секущата върви надолу-наляво от P). -->
+        <!-- горна секуща наклон -0.4 (върви нагоре-наляво от P). -->
+        <!-- Долна: D близкa, C далечна -->
+        <!-- Горна: B близкa, A далечна -->
+        <!-- От изчислението горе: наклон -0.4 дава пресечни точки x=201.2 (y=171.5) и x=131.2 (y=199.5) — двете долу! Тоест наклон -0.4 не е надолу, а надолу защото y расте надолу в SVG. -->
+        <!-- Всъщност в SVG y-оста е обърната, така че наклон -0.4 означава визуално НАГОРЕ! -->
+        <!-- За наклон -0.4 (визуално нагоре-наляво): B близо = (201.2, 171.5)? y=171.5 е ПОД P(y=120). Чакай, y=171.5 > y=120, значи в SVG е по-надолу. -->
+        <!-- Значи формулата е неправилна. Нека проверя: y = 120 - 0.4*(x - 330). За x < 330: y > 120. Значи точките са ПОД P. Това е долна секуща в SVG. -->
+        <!-- Ок, значи с наклон -0.4 → точките са под P. Тогава за горна секуща искам наклон +0.4: y = 120 + 0.4*(x-330), за x<330 → y<120. -->
+        <!-- Но (x-140)² + (y-120)² = 80². y-120 = 0.4(x-330). -->
+        <!-- (x-140)² + 0.16(x-330)² = 6400 — същите стойности! -->
+        <!-- Значи пресечните точки са симетрични: x=201.2, y=120+0.4*(201.2-330)=120-51.5=68.5 и x=131.2, y=120-79.5=40.5 -->
+        <!-- Хм, двете точки са горе. Добре. -->
+        <!-- ОК, ще подредя чисто координатите: -->
+        <!-- Горна секуща през P(330,120), наклон +0.4: B(близо)=(201,68.5), A(далеч)=(131,40.5) -->
+        <!-- Долна секуща през P(330,120), наклон -0.4: D(близо)=(201,171.5), C(далеч)=(131,199.5) -->
+        <!-- Проверка окръжност: (201-140)² + (68.5-120)² = 3721 + 2652 = 6373 ≈ 6400 ✓ -->
+        <!-- (131-140)² + (40.5-120)² = 81 + 6320 = 6401 ≈ 6400 ✓ -->
+        <!-- Сега реда е: P → B(201,68.5) → A(131,40.5) за горна -->
+        <!-- P → D(201,171.5) → C(131,199.5) за долна -->
+        <!-- Голямата дъга AC е тази, която обгражда "задната" част на окръжността (от A през лявата страна до C) -->
+        <!-- Малката дъга BD е близо до P (от B надолу до D) -->
+
+        <!-- Горна секуща: през P до A -->
+        <line x1="330" y1="120" x2="131" y2="40.5" stroke="#8b2a1f" stroke-width="2"/>
+        <!-- Долна секуща: през P до C -->
+        <line x1="330" y1="120" x2="131" y2="199.5" stroke="#8b2a1f" stroke-width="2"/>
+        <!-- Точки A, B върху горната секуща -->
+        <circle cx="131" cy="40.5" r="4.5" fill="#1a1612"/>
+        <text x="112" y="36" font-family="Cormorant Garamond" font-size="20" font-weight="700">A</text>
+        <circle cx="201" cy="68.5" r="4.5" fill="#1a1612"/>
+        <text x="208" y="62" font-family="Cormorant Garamond" font-size="18" font-weight="700">B</text>
+        <!-- Точки C, D върху долната секуща -->
+        <circle cx="131" cy="199.5" r="4.5" fill="#1a1612"/>
+        <text x="112" y="217" font-family="Cormorant Garamond" font-size="20" font-weight="700">C</text>
+        <circle cx="201" cy="171.5" r="4.5" fill="#1a1612"/>
+        <text x="208" y="185" font-family="Cormorant Garamond" font-size="18" font-weight="700">D</text>
+        <!-- Голяма дъга AC (отлявата страна на окръжността) -->
+        <path d="M 131 40.5 A 80 80 0 0 0 131 199.5" fill="none" stroke="#b8893a" stroke-width="3.5"/>
+        <text x="40" y="125" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#b8893a" font-weight="700">дъга AC</text>
+        <text x="40" y="138" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#b8893a">= ${bigArc}°</text>
+        <!-- Малка дъга BD (близо до P) -->
+        <path d="M 201 68.5 A 80 80 0 0 1 201 171.5" fill="none" stroke="#c23616" stroke-width="3"/>
+        <text x="240" y="115" font-family="JetBrains Mono" font-size="11" fill="#c23616" font-weight="700">BD = ${smallArc}°</text>
+        <!-- Ъгълът при P (малка дъга за визуализация) -->
+        <path d="M 310 108 A 22 22 0 0 0 310 132" fill="none" stroke="#c23616" stroke-width="1.5"/>
+        <text x="285" y="125" font-family="JetBrains Mono" font-size="13" fill="#c23616" font-weight="700">?</text>
+      </svg>`,
+    answerLabel: "∠APC = ",
+    answer: angle,
+    hint: `📜 Евклид, Кн. III, Тв. 36 (обобщено): Ъгълът, образуван от две секущи от външна точка, е равен на полуразликата на двете дъги, които той отсича. Значи ∠APC = (голяма дъга AC − малка дъга BD) / 2 = (${bigArc} − ${smallArc}) / 2.`,
+    digit: angle % 10
+  };
+}
+
+// Вариант 5Г: Ъгъл от секуща и допирателна от външна точка
+// Теорема: ∠P = (пресечена_дъга − откъсната_дъга) / 2
+function station5_variantD() {
+  const pairs = [
+    { big: 104, small: 24 },  // 40
+    { big: 116, small: 32 },  // 42
+    { big: 128, small: 46 },  // 41
+    { big: 134, small: 32 },  // 51
+    { big: 142, small: 54 },  // 44
+    { big: 148, small: 24 },  // 62
+    { big: 128, small: 54 },  // 37
+    { big: 116, small: 38 },  // 39
+    { big: 142, small: 38 },  // 52
+    { big: 134, small: 62 },  // 36
+    { big: 148, small: 62 },  // 43
+    { big: 104, small: 38 }   // 33
+  ];
+  const t = pickRandom(pairs);
+  const bigArc = t.big;
+  const smallArc = t.small;
+  const angle = (bigArc - smallArc) / 2;
+  return {
+    problem: `От външна точка P са прекарани секуща и допирателна към окръжност. Секущата пресича окръжността в точки A и B (B е по-близо до P). Допирателната докосва окръжността в точка T. Дъгата AT (голямата) е ${bigArc}°, а дъгата BT (малката) е ${smallArc}°. Намери ъгъла ∠APT при върха P (в градуси).`,
+    diagram: `
+      <svg viewBox="0 0 360 240" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="140" cy="120" r="80" fill="none" stroke="#1a1612" stroke-width="2"/>
+        <!-- P -->
+        <circle cx="330" cy="120" r="4.5" fill="#8b2a1f"/>
+        <text x="340" y="125" font-family="Cormorant Garamond" font-size="22" font-weight="700">P</text>
+        <!-- Секуща (горна): през P до A(далечно), B(близко) на окръжност -->
+        <line x1="330" y1="120" x2="131" y2="40.5" stroke="#8b2a1f" stroke-width="2"/>
+        <circle cx="131" cy="40.5" r="4.5" fill="#1a1612"/>
+        <text x="112" y="36" font-family="Cormorant Garamond" font-size="20" font-weight="700">A</text>
+        <circle cx="201" cy="68.5" r="4.5" fill="#1a1612"/>
+        <text x="208" y="62" font-family="Cormorant Garamond" font-size="18" font-weight="700">B</text>
+        <!-- Допирателна от P докосва окръжността в T -->
+        <!-- Tangent length = √(OP² - r²) = √(190² - 80²) = √(36100-6400) = √29700 ≈ 172.34 -->
+        <!-- OP вектор: O=(140,120), P=(330,120), OP = (190, 0) -->
+        <!-- Допирната точка T е така, че OT⊥PT. Ъгъл OPT: sin(OPT) = r/OP = 80/190 -->
+        <!-- OT = 80. T лежи на окръжност, OT⊥PT. -->
+        <!-- Използвам геометрично: T = O + r*(P-O)/|OP| * cos(θ) + perpendicular component -->
+        <!-- По-просто: ъгъл POT (където T е допирната точка) — cos(POT) = OT/OP? Не — sin(POT) = PT/OP... -->
+        <!-- В правоъгълния триъгълник OPT: OT=r=80 (катет), OP=190 (хипотенуза), PT=√(OP²-OT²)=172.34 (катет) -->
+        <!-- Ъгълът TOP = arccos(OT/OP) = arccos(80/190) ≈ 65.05° -->
+        <!-- За долната допирателна: T лежи в долната полуокръжност, T = O + 80*(cos(θ), sin(θ)) -->
+        <!-- Ъгълът на вектора OT спрямо OP (по часовник): за долна допирателна — θ = -65.05° или еквивалентно 360-65 = 295° -->
+        <!-- В стандартна математическа: OT = (cos(-65.05°)*80, sin(-65.05°)*80) от O -->
+        <!-- T = (140 + 80*cos(-65.05°), 120 - 80*sin(-65.05°)) = ако y е обърната. -->
+        <!-- cos(-65.05°) = 0.4211; sin(-65.05°) = -0.9070 -->
+        <!-- T = (140 + 33.69, 120 - (-72.56)) = (173.69, 192.56) -->
+        <!-- Проверка: OT = √((173.69-140)² + (192.56-120)²) = √(1135+5265) = √6400 = 80 ✓ -->
+        <!-- PT = √((173.69-330)² + (192.56-120)²) = √(24436+5265) = √29701 ≈ 172.34 ✓ -->
+        <!-- OT·PT = (33.69, 72.56) · (-156.31, 72.56) = -5266 + 5265 = -1 ≈ 0 ✓ (перпендикулярни) -->
+        <line x1="330" y1="120" x2="173.69" y2="192.56" stroke="#8b2a1f" stroke-width="2"/>
+        <circle cx="173.69" cy="192.56" r="4.5" fill="#1a1612"/>
+        <text x="178" y="210" font-family="Cormorant Garamond" font-size="20" font-weight="700">T</text>
+        <text x="195" y="155" font-family="Cormorant Garamond" font-size="11" font-style="italic" fill="#8b2a1f">допирателна</text>
+        <!-- Голяма дъга AT (обгражда лявата страна от A до T) -->
+        <path d="M 131 40.5 A 80 80 0 0 0 173.69 192.56" fill="none" stroke="#b8893a" stroke-width="3.5"/>
+        <text x="40" y="115" font-family="JetBrains Mono" font-size="11" fill="#b8893a" font-weight="700">дъга AT</text>
+        <text x="40" y="128" font-family="JetBrains Mono" font-size="11" fill="#b8893a" font-weight="700">= ${bigArc}°</text>
+        <!-- Малка дъга BT (от B до T близо до P) -->
+        <path d="M 201 68.5 A 80 80 0 0 1 173.69 192.56" fill="none" stroke="#c23616" stroke-width="3"/>
+        <text x="240" y="115" font-family="JetBrains Mono" font-size="11" fill="#c23616" font-weight="700">BT = ${smallArc}°</text>
+        <!-- Ъгълът при P -->
+        <path d="M 308 112 A 22 22 0 0 0 316 140" fill="none" stroke="#c23616" stroke-width="1.5"/>
+        <text x="288" y="135" font-family="JetBrains Mono" font-size="13" fill="#c23616" font-weight="700">?</text>
+      </svg>`,
+    answerLabel: "∠APT = ",
+    answer: angle,
+    hint: `📜 Евклид, Кн. III, Тв. 36 (обобщено): Ъгълът, образуван от секуща и допирателна от външна точка, е равен на полуразликата на двете дъги, които той отсича. ∠APT = (голяма дъга AT − малка дъга BT) / 2 = (${bigArc} − ${smallArc}) / 2. ВАЖНО: ъгъл с връх ВЪТРЕ в окръжност → ПОЛУСБОР на дъгите; ъгъл с връх ИЗВЪН → ПОЛУРАЗЛИКА!`,
+    digit: angle % 10
+  };
+}
+
+function generateStation5() {
+  return pickRandom([station5_variantA, station5_variantB, station5_variantC, station5_variantD])();
+}
+
+// ============ СТАНЦИЯ 6: ДОПИРАТЕЛНА И ХОРДА ============
+
+// Вариант 6А: Даден ъгъл допирателна-хорда → намери централния
+function station6_variantA() {
+  const tangentChord = pickRandom([22, 28, 34, 41, 47, 53, 58, 64]);
+  const central = 2 * tangentChord;
+  return {
+    problem: `В окръжност с център O е построена хорда AB. В точка A е прекарана допирателна към окръжността. Ъгълът между хордата AB и допирателната е ${tangentChord}°. Колко градуса е централният ъгъл ∠AOB, съответстващ на хордата AB?`,
+    diagram: `
+      <svg viewBox="0 0 320 280" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="160" cy="150" r="95" fill="none" stroke="#1a1612" stroke-width="2"/>
+        <circle cx="160" cy="150" r="3" fill="#1a1612"/>
+        <text x="168" y="148" font-family="Cormorant Garamond" font-size="16" font-style="italic">O</text>
+        <circle cx="93" cy="217" r="4.5" fill="#1a1612"/>
+        <text x="72" y="232" font-family="Cormorant Garamond" font-size="20" font-weight="700">A</text>
+        <circle cx="240" cy="105" r="4.5" fill="#1a1612"/>
+        <text x="250" y="100" font-family="Cormorant Garamond" font-size="20" font-weight="700">B</text>
+        <line x1="93" y1="217" x2="240" y2="105" stroke="#1a1612" stroke-width="2"/>
+        <line x1="20" y1="150" x2="166" y2="284" stroke="#8b2a1f" stroke-width="2"/>
+        <line x1="160" y1="150" x2="93" y2="217" stroke="#b8893a" stroke-width="1.5" stroke-dasharray="3,3"/>
+        <line x1="160" y1="150" x2="240" y2="105" stroke="#b8893a" stroke-width="1.5" stroke-dasharray="3,3"/>
+        <text x="108" y="210" font-family="JetBrains Mono" font-size="12" fill="#8b2a1f" font-weight="700">${tangentChord}°</text>
+        <text x="145" y="168" font-family="JetBrains Mono" font-size="13" fill="#c23616" font-weight="700">?</text>
+        <text x="22" y="142" font-family="Cormorant Garamond" font-size="12" font-style="italic" fill="#8b2a1f">допирателна</text>
+      </svg>`,
+    answerLabel: "∠AOB = ",
+    answer: central,
+    hint: "📜 Евклид, Кн. III, Твърдение 32: 'Ъгълът между допирателна и хорда е равен на вписания ъгъл в алтернативния сегмент.' Този вписан ъгъл е половината на централния (Тв. 20). Значи ∠AOB = 2 · (ъгъл допирателна-хорда).",
+    digit: central % 10
+  };
+}
+
+// Вариант 6Б: Даден централен → намери ъгъл допирателна-хорда
+function station6_variantB() {
+  const tangentChord = pickRandom([17, 23, 29, 36, 43, 49, 54, 62, 67]);
+  const central = 2 * tangentChord;
+  return {
+    problem: `В окръжност с център O е построена хорда AB. В точка A е прекарана допирателна към окръжността. Централният ъгъл ∠AOB = ${central}°. Намери ъгъла между хордата AB и допирателната (в градуси).`,
+    diagram: `
+      <svg viewBox="0 0 320 280" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="160" cy="150" r="95" fill="none" stroke="#1a1612" stroke-width="2"/>
+        <circle cx="160" cy="150" r="3" fill="#1a1612"/>
+        <text x="168" y="148" font-family="Cormorant Garamond" font-size="16" font-style="italic">O</text>
+        <circle cx="93" cy="217" r="4.5" fill="#1a1612"/>
+        <text x="72" y="232" font-family="Cormorant Garamond" font-size="20" font-weight="700">A</text>
+        <circle cx="240" cy="105" r="4.5" fill="#1a1612"/>
+        <text x="250" y="100" font-family="Cormorant Garamond" font-size="20" font-weight="700">B</text>
+        <line x1="93" y1="217" x2="240" y2="105" stroke="#1a1612" stroke-width="2"/>
+        <line x1="20" y1="150" x2="166" y2="284" stroke="#8b2a1f" stroke-width="2"/>
+        <line x1="160" y1="150" x2="93" y2="217" stroke="#b8893a" stroke-width="1.5" stroke-dasharray="3,3"/>
+        <line x1="160" y1="150" x2="240" y2="105" stroke="#b8893a" stroke-width="1.5" stroke-dasharray="3,3"/>
+        <text x="108" y="210" font-family="JetBrains Mono" font-size="13" fill="#c23616" font-weight="700">?</text>
+        <text x="145" y="168" font-family="JetBrains Mono" font-size="12" fill="#8b2a1f" font-weight="700">${central}°</text>
+        <text x="22" y="142" font-family="Cormorant Garamond" font-size="12" font-style="italic" fill="#8b2a1f">допирателна</text>
+      </svg>`,
+    answerLabel: "Ъгъл = ",
+    answer: tangentChord,
+    hint: "📜 Евклид, Кн. III, Тв. 32: ъгълът между допирателна и хорда = вписан ъгъл към същата дъга = ½ централен ъгъл. Значи ъгъл = ∠AOB / 2.",
+    digit: tangentChord % 10
+  };
+}
+
+function generateStation6() {
+  return pickRandom([station6_variantA, station6_variantB])();
+}
+
+// ================ МЕТА-ДАННИ + ГЕНЕРИРАНЕ НА ТАЗИ ИГРА ================
+
+const stationMeta = [
+  { title: "Окото на наблюдателя", desc: "Централен и вписан ъгъл — от единия намери другия.", generator: generateStation1 },
+  { title: "Счупеният часовник", desc: "Минутна стрелка, ъгли и време.", generator: generateStation2 },
+  { title: "Пресечните хорди", desc: "Хорди, дъги и перпендикуляри от центъра.", generator: generateStation3 },
+  { title: "Невъзможният четириъгълник", desc: "Четириъгълник, вписан в окръжност, пази тайна.", generator: generateStation4 },
+  { title: "Допирът на истината", desc: "Допирателни и секущи от външна точка.", generator: generateStation5 },
+  { title: "Финалният печат", desc: "Допирателна и хорда — последната загадка.", generator: generateStation6 }
+];
+
+const stations = stationMeta.map(meta => ({
+  title: meta.title,
+  desc: meta.desc,
+  ...meta.generator()
+}));
+
+// ================ ЦИТАТИ НА ЕВКЛИД (разнообразен финал) ================
+
+const euclidQuotes = [
+  { text: "Не съществува царски път към геометрията.", author: "— ЕВКЛИД, ~300 г. пр. Хр." },
+  { text: "Цялото е по-голямо от частта.", author: "— ЕВКЛИД, Елементи, Аксиома 5" },
+  { text: "Това, което се твърди без доказателство, може да бъде отречено без доказателство.", author: "— ЕВКЛИД" },
+  { text: "Точката е това, което няма части.", author: "— ЕВКЛИД, Елементи, Определение 1" },
+  { text: "Величини, равни на една и съща величина, са равни помежду си.", author: "— ЕВКЛИД, Елементи, Аксиома 1" }
+];
+
+// ================ СЪСТОЯНИЕ ================
+
+let currentStation = null;
+let solvedStations = new Set();
+let score = 0;  // за single режим
+let hintsUsed = 0;
+let startTime = null;  // стартира само след стартовия екран
+let timerInterval = null;
+let hintUsedForCurrent = false;
+let timePenaltyMs = 0;
+let attemptsPerStation = {};
+let isLockedOut = false;
+let lockoutInterval = null;
+
+// --- ОТБОРЕН РЕЖИМ ---
+let gameMode = 'single';  // 'single' | 'team'
+let teams = [];           // [{name, color, score, stationsAssigned, stationsSolved, hintsUsed}]
+let stationAssignments = []; // за всяка станция: индекс на първоначално присвоения отбор
+let currentTeamIdx = null;   // кой отбор отговаря сега
+let attemptedTeams = new Set(); // отбори, които вече са сбъркали на текущата станция
+
+// Цветна палитра за отборите (максимум 6)
+const TEAM_COLORS = [
+  { name: 'Червен', color: '#c23616' },
+  { name: 'Син', color: '#1e5aa8' },
+  { name: 'Зелен', color: '#3d7d3d' },
+  { name: 'Жълт', color: '#d4a017' },
+  { name: 'Лилав', color: '#7d3d7d' },
+  { name: 'Оранжев', color: '#d97528' }
+];
+
+// ================ UI ЛОГИКА ================
+
+// ---------- СТАРТОВ ЕКРАН ----------
+
+function selectMode(mode) {
+  if (mode === 'single') {
+    startSingleGame();
+  } else {
+    document.getElementById('startCardMode').classList.add('hidden');
+    document.getElementById('startCardTeams').classList.remove('hidden');
+  }
+}
+
+function backToModeSelect() {
+  document.getElementById('startCardTeams').classList.add('hidden');
+  document.getElementById('startCardNames').classList.add('hidden');
+  document.getElementById('startCardMode').classList.remove('hidden');
+}
+
+function backToTeamCount() {
+  document.getElementById('startCardNames').classList.add('hidden');
+  document.getElementById('startCardTeams').classList.remove('hidden');
+}
+
+function selectTeamCount(n) {
+  // Подготвя временна структура за отборите, докато въвеждаме имена
+  const tempTeams = [];
+  for (let i = 0; i < n; i++) {
+    tempTeams.push({
+      name: `Отбор ${i + 1}`,
+      color: TEAM_COLORS[i].color,
+      score: 0,
+      stationsAssigned: 0,
+      stationsSolved: 0,
+      hintsUsed: 0
+    });
+  }
+
+  // Създава инпутите за имена
+  const setupDiv = document.getElementById('teamsSetup');
+  setupDiv.innerHTML = '';
+  tempTeams.forEach((t, i) => {
+    const row = document.createElement('div');
+    row.className = 'team-input-row';
+    row.innerHTML = `
+      <div class="team-color-dot" style="background: ${t.color};"></div>
+      <input type="text" value="${t.name}" maxlength="20" data-team-idx="${i}">
+    `;
+    setupDiv.appendChild(row);
+  });
+
+  // Запомняме броя на отборите временно
+  setupDiv.dataset.teamCount = n;
+
+  document.getElementById('startCardTeams').classList.add('hidden');
+  document.getElementById('startCardNames').classList.remove('hidden');
+}
+
+function startSingleGame() {
+  gameMode = 'single';
+  document.getElementById('startOverlay').classList.add('hidden');
+  startTime = Date.now();
+  renderStations();
+  startTimer();
+}
+
+function startTeamGame() {
+  gameMode = 'team';
+  const setupDiv = document.getElementById('teamsSetup');
+  const n = parseInt(setupDiv.dataset.teamCount);
+  const inputs = setupDiv.querySelectorAll('input');
+
+  teams = [];
+  for (let i = 0; i < n; i++) {
+    teams.push({
+      name: inputs[i].value.trim() || `Отбор ${i + 1}`,
+      color: TEAM_COLORS[i].color,
+      score: 0,
+      stationsAssigned: 0,
+      stationsSolved: 0,
+      hintsUsed: 0
+    });
+  }
+
+  // Разпределяме 6-те станции между отборите
+  // За n отбора, всяка получава 6/n задачи. Ако не се дели (2,3,6 → всичко ок).
+  assignStations(n);
+
+  // Показваме отборния брифинг и панела
+  document.getElementById('teamModeBriefing').style.display = 'inline';
+  document.getElementById('scoreItem').style.display = 'none'; // скриваме общите точки, защото ги имаме в team panel
+  renderTeamsPanel();
+
+  document.getElementById('startOverlay').classList.add('hidden');
+  startTime = Date.now();
+  renderStations();
+  startTimer();
+  updateCurrentTeamFromAssignment(0); // първата станция
+}
+
+function assignStations(n) {
+  // Редът на станциите е фиксиран (0..5). Разпределяме отборите равномерно.
+  // Пример за n=3: [0, 1, 2, 0, 1, 2] → всеки отбор получава 2 станции, редуване
+  // Пример за n=2: [0, 1, 0, 1, 0, 1] → всеки 3 станции
+  // Пример за n=6: [0, 1, 2, 3, 4, 5]
+  // Разбъркваме стартовата позиция за разнообразие
+  const offset = Math.floor(Math.random() * n);
+  stationAssignments = [];
+  for (let i = 0; i < 6; i++) {
+    stationAssignments.push((i + offset) % n);
+  }
+  // Броим присвоените станции на всеки отбор
+  stationAssignments.forEach(tIdx => teams[tIdx].stationsAssigned++);
+}
+
+function updateCurrentTeamFromAssignment(stationId) {
+  if (gameMode !== 'team') return;
+  currentTeamIdx = stationAssignments[stationId];
+  attemptedTeams = new Set();
+  showTurnBanner();
+}
+
+function showTurnBanner() {
+  const banner = document.getElementById('turnBanner');
+  const team = teams[currentTeamIdx];
+  banner.style.background = team.color + '22';
+  banner.style.borderLeft = `5px solid ${team.color}`;
+  banner.style.color = team.color;
+  banner.innerHTML = `🎯 Ред е на отбор <strong>${team.name}</strong>`;
+  banner.classList.add('active');
+  setTimeout(() => banner.classList.remove('active'), 2800);
+}
+
+function renderTeamsPanel() {
+  const panel = document.getElementById('teamsPanel');
+  panel.innerHTML = '';
+  teams.forEach((t, idx) => {
+    const isCurrent = (idx === currentTeamIdx);
+    const badge = document.createElement('div');
+    badge.className = 'team-badge' + (isCurrent ? ' current-turn' : '');
+    badge.innerHTML = `
+      <div class="team-badge-color" style="background: ${t.color};"></div>
+      <div class="team-badge-info">
+        <div class="team-badge-name">${t.name}</div>
+        <div class="team-badge-score">${t.score} т.</div>
+        <div class="team-badge-stations">${t.stationsSolved} ✓ от ${t.stationsAssigned}</div>
+      </div>
+    `;
+    panel.appendChild(badge);
+  });
+  panel.classList.toggle('active', gameMode === 'team');
+}
+
+function getNextTeamForStation(stationId) {
+  // Връща следващия отбор, който още не е опитвал тази станция
+  const startIdx = stationAssignments[stationId];
+  for (let step = 1; step <= teams.length; step++) {
+    const tryIdx = (startIdx + step) % teams.length;
+    if (!attemptedTeams.has(tryIdx)) {
+      return tryIdx;
+    }
+  }
+  return null; // всички са опитвали
+}
+
+function getRankForTeams() {
+  const sorted = [...teams].map((t, i) => ({...t, origIdx: i}))
+    .sort((a, b) => b.score - a.score);
+  return sorted;
+}
+
+// ---------- ОСНОВНАТА ИГРА ----------
+
+function init() {
+  // Показваме само стартовия екран. Таймерът и станциите се зареждат след избор на режим.
+  document.getElementById('startOverlay').classList.remove('hidden');
+}
+
+function renderStations() {
+  const grid = document.getElementById('stationsGrid');
+  grid.innerHTML = '';
+  stations.forEach((st, i) => {
+    const card = document.createElement('div');
+    const isLocked = i > 0 && !solvedStations.has(i - 1);
+    const isCompleted = solvedStations.has(i);
+    card.className = 'station-card' + (isLocked ? ' locked' : '') + (isCompleted ? ' completed' : '');
+    const roman = ['I', 'II', 'III', 'IV', 'V', 'VI'][i];
+    card.innerHTML = `
+      <div class="station-num">${roman}</div>
+      <div class="station-title">${st.title}</div>
+      <div class="station-desc">${st.desc}</div>
+    `;
+    if (!isLocked && !isCompleted) {
+      card.addEventListener('click', () => openStation(i));
+    }
+    grid.appendChild(card);
+  });
+}
+
+function openStation(id) {
+  currentStation = id;
+  hintUsedForCurrent = false;
+  attemptsPerStation[id] = 0;
+  isLockedOut = false;
+  updateAttemptDots(0);
+
+  // Отборен режим: определяме кой отбор е на ход за тази станция
+  if (gameMode === 'team') {
+    updateCurrentTeamFromAssignment(id);
+    renderTeamsPanel();
+    const team = teams[currentTeamIdx];
+    const badge = document.getElementById('modalTeamBadge');
+    badge.textContent = `🎯 Ред е на: ${team.name.toUpperCase()}`;
+    badge.style.color = team.color;
+    badge.style.borderColor = team.color;
+    badge.style.background = team.color + '15';
+    badge.classList.add('active');
+  } else {
+    document.getElementById('modalTeamBadge').classList.remove('active');
+  }
+
+  const st = stations[id];
+  const roman = ['I', 'II', 'III', 'IV', 'V', 'VI'][id];
+  document.getElementById('modalNum').textContent = `СТАНЦИЯ ${roman}`;
+  document.getElementById('modalTitle').textContent = st.title;
+  document.getElementById('modalProblem').textContent = st.problem;
+  document.getElementById('modalDiagram').innerHTML = st.diagram;
+  document.getElementById('answerLabel').textContent = st.answerLabel;
+  document.getElementById('answerInput').value = '';
+  document.getElementById('answerInput').placeholder = 'въведи числото...';
+  document.getElementById('hintBox').classList.remove('active');
+  document.getElementById('hintBox').textContent = '';
+  document.getElementById('feedback').className = 'feedback';
+  document.getElementById('feedback').textContent = '';
+  document.getElementById('hintBtn').disabled = false;
+  document.getElementById('lockoutOverlay').classList.remove('active');
+  document.getElementById('modalBackdrop').classList.add('active');
+  setTimeout(() => document.getElementById('answerInput').focus(), 300);
+}
+
+function updateAttemptDots(count) {
+  for (let i = 0; i < 3; i++) {
+    const dot = document.getElementById(`attempt-${i}`);
+    if (dot) {
+      if (i < count) dot.classList.add('used');
+      else dot.classList.remove('used');
+    }
+  }
+}
+
+function closeModal() {
+  document.getElementById('modalBackdrop').classList.remove('active');
+  currentStation = null;
+}
+
+function checkAnswer() {
+  if (currentStation === null || isLockedOut) return;
+  const st = stations[currentStation];
+  const input = document.getElementById('answerInput').value.trim().replace(',', '.');
+  const numAnswer = parseFloat(input);
+  const feedback = document.getElementById('feedback');
+
+  if (isNaN(numAnswer)) {
+    feedback.className = 'feedback error';
+    feedback.textContent = '⚠ Въведи валидно число.';
+    return;
+  }
+
+  if (Math.abs(numAnswer - st.answer) < 0.001) {
+    // ==== ПРАВИЛЕН ОТГОВОР ====
+    const attempts = attemptsPerStation[currentStation] || 0;
+    let earned = 100;
+    if (hintUsedForCurrent) earned -= 50;
+    // В отборен режим: намалението за грешки не се прилага на печелившия отбор,
+    // защото грешките са от други отбори; печелившият взема пълната сума (минус жокер)
+    if (gameMode === 'single') {
+      earned -= attempts * 15;
+    }
+    earned = Math.max(20, earned);
+
+    if (gameMode === 'team') {
+      // Точките отиват на текущия отбор
+      teams[currentTeamIdx].score += earned;
+      teams[currentTeamIdx].stationsSolved++;
+      if (hintUsedForCurrent) teams[currentTeamIdx].hintsUsed++;
+    } else {
+      score += earned;
+    }
+
+    solvedStations.add(currentStation);
+    feedback.className = 'feedback success';
+    const teamLabel = gameMode === 'team'
+      ? `<strong style="color: ${teams[currentTeamIdx].color};">${teams[currentTeamIdx].name}</strong> решава! `
+      : '';
+    feedback.innerHTML = `✓ ПРАВИЛНО! ${teamLabel}Цифра <strong>${st.digit}</strong> добавена към кода. <br>+${earned} точки.`;
+
+    const digit = document.querySelector(`#codeDisplay .code-digit[data-pos="${currentStation}"]`);
+    if (digit) {
+      digit.textContent = st.digit;
+      digit.classList.add('filled');
+    }
+
+    // Пулсация на целия код
+    const codeDisp = document.getElementById('codeDisplay');
+    codeDisp.classList.remove('pulse');
+    void codeDisp.offsetWidth;
+    codeDisp.classList.add('pulse');
+
+    const nextUnlockedId = currentStation + 1;
+
+    updateStats();
+    if (gameMode === 'team') renderTeamsPanel();
+
+    setTimeout(() => {
+      closeModal();
+      renderStations();
+      if (nextUnlockedId < stations.length && !solvedStations.has(nextUnlockedId)) {
+        const cards = document.querySelectorAll('.station-card');
+        if (cards[nextUnlockedId]) {
+          cards[nextUnlockedId].classList.add('just-unlocked');
+          setTimeout(() => cards[nextUnlockedId].classList.remove('just-unlocked'), 1000);
+        }
+      }
+      if (solvedStations.size === stations.length) {
+        triggerFinale();
+      }
+    }, 1800);
+  } else {
+    // ==== ГРЕШЕН ОТГОВОР ====
+    attemptsPerStation[currentStation] = (attemptsPerStation[currentStation] || 0) + 1;
+    const attempts = attemptsPerStation[currentStation];
+    updateAttemptDots(attempts);
+
+    if (gameMode === 'team') {
+      // Малка санкция за текущия отбор и преминаване към следващия
+      teams[currentTeamIdx].score = Math.max(0, teams[currentTeamIdx].score - 15);
+      timePenaltyMs += 20 * 1000;
+      attemptedTeams.add(currentTeamIdx);
+    } else {
+      score = Math.max(0, score - 25);
+      timePenaltyMs += 30 * 1000;
+    }
+    flashTimerPenalty();
+    flashScorePenalty();
+
+    const stamp = document.getElementById('penaltyStamp');
+    stamp.classList.remove('active');
+    void stamp.offsetWidth;
+    stamp.classList.add('active');
+
+    const modalEl = document.getElementById('modal');
+    modalEl.classList.remove('penalty-shake');
+    void modalEl.offsetWidth;
+    modalEl.classList.add('penalty-shake');
+
+    feedback.className = 'feedback error';
+
+    if (gameMode === 'team') {
+      // Определяме следващия отбор
+      const nextTeamIdx = getNextTeamForStation(currentStation);
+      if (nextTeamIdx === null) {
+        // Всички отбори са сбъркали — заключваме станцията
+        feedback.innerHTML = `✗ <strong>ВСИЧКИ ОТБОРИ СБЪРКАХА!</strong> Станцията се блокира...`;
+        updateStats();
+        renderTeamsPanel();
+        triggerLockout();
+      } else {
+        const prevTeam = teams[currentTeamIdx];
+        const nextTeam = teams[nextTeamIdx];
+        feedback.innerHTML = `✗ <strong style="color: ${prevTeam.color};">${prevTeam.name}</strong> сбърка! −15 точки, +20 сек. наказание. <br>➤ Ход на <strong style="color: ${nextTeam.color};">${nextTeam.name}</strong>!`;
+        // Сменяме текущия отбор
+        currentTeamIdx = nextTeamIdx;
+        // Обновяваме бадж в модала
+        const badge = document.getElementById('modalTeamBadge');
+        badge.textContent = `🎯 Ред е на: ${nextTeam.name.toUpperCase()}`;
+        badge.style.color = nextTeam.color;
+        badge.style.borderColor = nextTeam.color;
+        badge.style.background = nextTeam.color + '15';
+        renderTeamsPanel();
+        // Нулираме жокера за новия отбор (всеки отбор има право на жокер)
+        hintUsedForCurrent = false;
+        document.getElementById('hintBtn').disabled = false;
+        document.getElementById('hintBox').classList.remove('active');
+        // Малка анимация на банера
+        showTurnBanner();
+        updateStats();
+        document.getElementById('answerInput').value = '';
+        document.getElementById('answerInput').focus();
+      }
+    } else {
+      feedback.innerHTML = `✗ <strong>ГРЕШКА!</strong> −25 точки, +30 сек. наказателно време. <br>Остават ${3 - attempts} опит(а) преди заключване.`;
+      updateStats();
+      if (attempts >= 3) {
+        triggerLockout();
+      }
+    }
+  }
+}
+
+function triggerLockout() {
+  isLockedOut = true;
+  const overlay = document.getElementById('lockoutOverlay');
+  const timerEl = document.getElementById('lockoutTimer');
+  let countdown = 15;
+  timerEl.textContent = countdown;
+  overlay.classList.add('active');
+
+  lockoutInterval = setInterval(() => {
+    countdown--;
+    timerEl.textContent = countdown;
+    if (countdown <= 0) {
+      clearInterval(lockoutInterval);
+      overlay.classList.remove('active');
+      isLockedOut = false;
+      attemptsPerStation[currentStation] = 0;
+      updateAttemptDots(0);
+      document.getElementById('answerInput').value = '';
+      document.getElementById('answerInput').focus();
+      document.getElementById('feedback').className = 'feedback';
+    }
+  }, 1000);
+}
+
+function flashTimerPenalty() {
+  const t = document.getElementById('timer');
+  t.classList.remove('penalty');
+  void t.offsetWidth;
+  t.classList.add('penalty');
+}
+
+function flashScorePenalty() {
+  const s = document.getElementById('score');
+  s.classList.remove('penalty-flash');
+  void s.offsetWidth;
+  s.classList.add('penalty-flash');
+}
+
+function showHint() {
+  if (currentStation === null) return;
+  const st = stations[currentStation];
+  const hintBox = document.getElementById('hintBox');
+  hintBox.textContent = '💡 ' + st.hint;
+  hintBox.classList.add('active');
+  document.getElementById('hintBtn').disabled = true;
+  if (!hintUsedForCurrent) {
+    hintUsedForCurrent = true;
+    if (gameMode === 'team') {
+      teams[currentTeamIdx].hintsUsed++;
+      renderTeamsPanel();
+    } else {
+      hintsUsed++;
+    }
+    updateStats();
+  }
+}
+
+function updateStats() {
+  const scoreEl = document.getElementById('score');
+  if (scoreEl && gameMode === 'single') {
+    scoreEl.textContent = score;
+  }
+  document.getElementById('solvedCount').textContent = solvedStations.size;
+  // hintsUsed: в single режим — общо; в team режим — сумата на всички отбори
+  let totalHints = hintsUsed;
+  if (gameMode === 'team') {
+    totalHints = teams.reduce((sum, t) => sum + t.hintsUsed, 0);
+  }
+  document.getElementById('hintsUsed').textContent = totalHints;
+}
+
+function startTimer() {
+  timerInterval = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - startTime + timePenaltyMs) / 1000);
+    const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+    const s = String(elapsed % 60).padStart(2, '0');
+    document.getElementById('timer').textContent = `${m}:${s}`;
+  }, 1000);
+}
+
+// ================ ЕПИЧЕН ФИНАЛ ================
+
+function getRank(score, hints, elapsedSec) {
+  if (score >= 550 && hints === 0 && elapsedSec < 600) return "РАНГ: ЛЕГЕНДА НА ЕВКЛИД";
+  if (score >= 500 && hints <= 1) return "РАНГ: МАЙСТОР-ГЕОМЕТЪР";
+  if (score >= 400) return "РАНГ: АГЕНТ-ГЕОМЕТЪР";
+  if (score >= 250) return "РАНГ: ЧИРАК НА ЕВКЛИД";
+  return "РАНГ: НАЧИНАЕЩ";
+}
+
+function createRays() {
+  const raysContainer = document.getElementById('rays');
+  raysContainer.innerHTML = '';
+  for (let i = 0; i < 12; i++) {
+    const ray = document.createElement('div');
+    ray.className = 'ray';
+    ray.style.transform = `translate(-50%, -100%) rotate(${i * 30}deg)`;
+    raysContainer.appendChild(ray);
+  }
+}
+
+function createConfetti() {
+  const overlay = document.getElementById('finaleOverlay');
+  const colors = ['#b8893a', '#e8b64a', '#8b2a1f', '#e8dfc8', '#c23616'];
+  for (let i = 0; i < 80; i++) {
+    const conf = document.createElement('div');
+    conf.className = 'confetti active';
+    conf.style.left = Math.random() * 100 + '%';
+    conf.style.background = colors[Math.floor(Math.random() * colors.length)];
+    conf.style.animationDelay = (Math.random() * 2) + 's';
+    conf.style.animationDuration = (3 + Math.random() * 3) + 's';
+    if (Math.random() > 0.5) {
+      conf.style.borderRadius = '50%';
+    }
+    overlay.appendChild(conf);
+  }
+}
+
+function triggerFinale() {
+  clearInterval(timerInterval);
+  const finalTimeStr = document.getElementById('timer').textContent;
+  const totalElapsedSec = Math.floor((Date.now() - startTime + timePenaltyMs) / 1000);
+  const finalCode = stations.map(s => s.digit).join('');
+
+  document.getElementById('modalBackdrop').classList.remove('active');
+
+  const overlay = document.getElementById('finaleOverlay');
+  const door = document.getElementById('safeDoor');
+  const lightBeam = document.getElementById('lightBeam');
+  const rays = document.getElementById('rays');
+  const content = document.getElementById('finaleContent');
+  const codeDisplay = document.getElementById('safeCodeDisplay');
+
+  overlay.classList.add('active');
+
+  // Сценарий:
+  // 1. Сейфът се появява (0-1s) — safeAppear
+  // 2. Кодът се изписва цифра по цифра (1.2-2.7s)
+  // 3. Колелото вече се върти (вградено в wheelSpin, 3s)
+  // 4. Вратата се отваря (2.7-5.2s) — doorOpen
+  // 5. Светлинен взрив + лъчи (5.2-6.7s)
+  // 6. Съдържание + конфети (6.7s+)
+
+  setTimeout(() => {
+    let idx = 0;
+    codeDisplay.textContent = '';
+    const codeReveal = setInterval(() => {
+      codeDisplay.textContent += finalCode[idx];
+      idx++;
+      if (idx >= finalCode.length) {
+        clearInterval(codeReveal);
+
+        setTimeout(() => {
+          door.classList.add('opening');
+
+          setTimeout(() => {
+            lightBeam.classList.add('active');
+            createRays();
+            rays.classList.add('active');
+
+            // Избор на случаен цитат
+            const quote = euclidQuotes[Math.floor(Math.random() * euclidQuotes.length)];
+            document.getElementById('finaleQuote').textContent = quote.text;
+            document.getElementById('finaleQuote').parentElement.querySelector('.finale-author').textContent = quote.author;
+
+            content.classList.add('active');
+            document.getElementById('finalTime').textContent = finalTimeStr;
+
+            if (gameMode === 'team') {
+              // В отборен режим — показваме класирането на отборите, не индивидуалните статистики
+              document.getElementById('finaleStatsBlock').style.display = 'none';
+
+              const rankBlock = document.getElementById('teamRanking');
+              rankBlock.classList.add('active');
+              rankBlock.innerHTML = '';
+              const ranked = getRankForTeams();
+              const medals = ['🥇', '🥈', '🥉', '4.', '5.', '6.'];
+              ranked.forEach((t, i) => {
+                const row = document.createElement('div');
+                row.className = 'team-rank-row';
+                row.innerHTML = `
+                  <div class="team-rank-pos">${medals[i] || (i+1)+'.'}</div>
+                  <div class="team-rank-color" style="background: ${t.color};"></div>
+                  <div class="team-rank-name">${t.name}</div>
+                  <div class="team-rank-score">${t.score} т.</div>
+                `;
+                rankBlock.appendChild(row);
+              });
+
+              // Ранг базиран на победителя
+              const winner = ranked[0];
+              document.getElementById('finaleRank').textContent = `🏆 ПОБЕДИТЕЛ: ${winner.name.toUpperCase()}`;
+              document.getElementById('finaleRank').style.background = winner.color;
+              document.getElementById('finaleRank').style.color = 'white';
+            } else {
+              // Единичен режим
+              document.getElementById('finalScore').textContent = score;
+              document.getElementById('finalHints').textContent = hintsUsed + '/6';
+              document.getElementById('finaleRank').textContent = getRank(score, hintsUsed, totalElapsedSec);
+            }
+
+            createConfetti();
+          }, 1500);
+        }, 1000);
+      }
+    }, 220);
+  }, 1000);
+}
+
+document.getElementById('answerInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') checkAnswer();
+});
+
+document.getElementById('modalBackdrop').addEventListener('click', (e) => {
+  if (e.target.id === 'modalBackdrop') closeModal();
+});
+
+init();
+</script>
+</body>
+</html>
