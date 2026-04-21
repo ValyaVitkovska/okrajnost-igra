@@ -328,3 +328,434 @@
       }
     }
     function clearGame() {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+    function loadResults() {
+      try {
+        const raw = localStorage.getItem(RESULTS_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch {
+        return [];
+      }
+    }
+    function saveResults(results) {
+      localStorage.setItem(RESULTS_KEY, JSON.stringify(results));
+    }
+
+    function getCertificateTier(totalScoreWithBonus) {
+      if (totalScoreWithBonus >= 245) {
+        return { key: 'gold', title: 'Златен сертификат', badge: '🥇', border: 'border-yellow-400', text: 'text-yellow-300', softBg: 'bg-yellow-500/10', gradient: 'from-yellow-400 via-amber-300 to-yellow-500' };
+      }
+      if (totalScoreWithBonus >= 205) {
+        return { key: 'silver', title: 'Сребърен сертификат', badge: '🥈', border: 'border-slate-300', text: 'text-slate-200', softBg: 'bg-slate-300/10', gradient: 'from-slate-200 via-slate-300 to-slate-400' };
+      }
+      return { key: 'bronze', title: 'Бронзов сертификат', badge: '🥉', border: 'border-orange-500', text: 'text-orange-300', softBg: 'bg-orange-500/10', gradient: 'from-orange-400 via-amber-600 to-orange-700' };
+    }
+
+    function getTopThree(results) {
+      return [...results].sort((a, b) => {
+        if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
+        return a.durationMs - b.durationMs;
+      }).slice(0, 3);
+    }
+
+    function buildResultCode(team, totalScore, durationMs) {
+      return `${team.seed}-${totalScore}-${Math.floor(durationMs / 1000)}`;
+    }
+
+    function App() {
+      const [currentView, setCurrentView] = useState('menu');
+      const [myTeam, setMyTeam] = useState(null);
+      const [teamNameInput, setTeamNameInput] = useState('');
+      const [answerInput, setAnswerInput] = useState('');
+      const [feedback, setFeedback] = useState(null);
+      const [currentTime, setCurrentTime] = useState(Date.now());
+      const [savedResults, setSavedResults] = useState([]);
+
+      useEffect(() => {
+        const interval = setInterval(() => setCurrentTime(Date.now()), 1000);
+        return () => clearInterval(interval);
+      }, []);
+
+      useEffect(() => {
+        const savedGame = loadGame();
+        const existingResults = loadResults();
+        setSavedResults(existingResults);
+        if (savedGame) {
+          setMyTeam(savedGame);
+          setCurrentView(savedGame.completed ? 'final' : 'quiz');
+        }
+      }, []);
+
+      const durationMs = useMemo(() => {
+        if (!myTeam?.startTime) return 0;
+        if (myTeam.completed && myTeam.endTime) return myTeam.endTime - myTeam.startTime;
+        return currentTime - myTeam.startTime;
+      }, [myTeam, currentTime]);
+
+      const speedBonus = myTeam?.completed && durationMs < BONUS_SECONDS_LIMIT * 1000 ? 1 : 0;
+      const totalScore = (myTeam?.score || 0) + speedBonus;
+      const certificate = getCertificateTier(totalScore);
+      const today = new Date().toLocaleDateString('bg-BG');
+      const resultCode = myTeam ? buildResultCode(myTeam, totalScore, durationMs) : '';
+      const topThree = getTopThree(savedResults);
+
+      const myRank = myTeam?.completed
+        ? [...savedResults]
+            .sort((a, b) => {
+              if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
+              return a.durationMs - b.durationMs;
+            })
+            .findIndex((r) => r.resultCode === resultCode) + 1
+        : 0;
+
+      const registerCompletedResult = (teamData) => {
+        const finalDuration = teamData.endTime - teamData.startTime;
+        const bonus = finalDuration < BONUS_SECONDS_LIMIT * 1000 ? 1 : 0;
+        const total = teamData.score + bonus;
+        const resultEntry = {
+          name: teamData.name,
+          baseScore: teamData.score,
+          speedBonus: bonus,
+          totalScore: total,
+          durationMs: finalDuration,
+          seed: teamData.seed,
+          completedAt: teamData.endTime,
+          resultCode: buildResultCode(teamData, total, finalDuration)
+        };
+        const previous = loadResults();
+        const exists = previous.some((r) => r.resultCode === resultEntry.resultCode);
+        if (!exists) {
+          const updated = [...previous, resultEntry];
+          saveResults(updated);
+          setSavedResults(updated);
+        } else {
+          setSavedResults(previous);
+        }
+      };
+
+      const handleTeamLogin = (e) => {
+        e.preventDefault();
+        const name = teamNameInput.trim();
+        if (!name) return;
+        const randomSeed = Math.floor(Math.random() * 1000000);
+        const newTeam = {
+          name,
+          score: 0,
+          questionIndex: 0,
+          completed: false,
+          startTime: Date.now(),
+          endTime: null,
+          seed: randomSeed
+        };
+        setMyTeam(newTeam);
+        saveGame(newTeam);
+        setCurrentView('quiz');
+      };
+
+      const handleAnswerSubmit = (e) => {
+        e.preventDefault();
+        if (!myTeam) return;
+        const teamQuestions = generateQuestionsForTeam(myTeam.seed || 12345);
+        const currentQuestion = teamQuestions[myTeam.questionIndex];
+        const normalizedInput = answerInput.trim().toLowerCase().replace(',', '.');
+        const normalizedAnswer = currentQuestion.a.toLowerCase().replace(',', '.');
+
+        if (normalizedInput === normalizedAnswer) {
+          setFeedback({ type: 'success', text: `Верен отговор! Печелите ${currentQuestion.points} точки.` });
+          const isCompleted = myTeam.questionIndex + 1 >= teamQuestions.length;
+          const updatedTeam = {
+            ...myTeam,
+            score: myTeam.score + currentQuestion.points,
+            questionIndex: myTeam.questionIndex + 1,
+            completed: isCompleted,
+            endTime: isCompleted ? Date.now() : null
+          };
+          setMyTeam(updatedTeam);
+          saveGame(updatedTeam);
+          setAnswerInput('');
+
+          if (isCompleted) {
+            registerCompletedResult(updatedTeam);
+            setTimeout(() => {
+              setFeedback(null);
+              setCurrentView('final');
+            }, 1000);
+          } else {
+            setTimeout(() => setFeedback(null), 2000);
+          }
+        } else {
+          setFeedback({ type: 'error', text: 'Грешен отговор. Опитайте отново!' });
+          setTimeout(() => setFeedback(null), 2500);
+        }
+      };
+
+      const startNewGame = () => {
+        clearGame();
+        setMyTeam(null);
+        setTeamNameInput('');
+        setAnswerInput('');
+        setFeedback(null);
+        setCurrentView('menu');
+      };
+
+      const downloadPDF = () => {
+        const element = document.getElementById('certificate');
+        if (!element || !window.html2pdf) {
+          alert('Липсва библиотеката html2pdf.js.');
+          return;
+        }
+        const opt = {
+          margin: 8,
+          filename: `GeoQuest-${myTeam?.name || 'rezultat'}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+        };
+        window.html2pdf().set(opt).from(element).save();
+      };
+
+      if (currentView === 'menu') {
+        return (
+          <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center justify-center p-6">
+            <div className="text-center max-w-3xl w-full">
+              <div className="flex justify-center mb-6">
+                <div className="bg-indigo-600 p-4 rounded-full shadow-soft">
+                  <span className="text-4xl">📐</span>
+                </div>
+              </div>
+              <h1 className="text-4xl md:text-5xl font-extrabold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400">
+                Геометричен куест
+              </h1>
+              <p className="text-slate-300 text-lg mb-2">Идея и педагогически решения: Валя Витковска</p>
+              <p className="text-slate-500 mb-10">Локална игра за работа в клас. Всеки отбор решава свои задачи и накрая генерира PDF или скрийншот на резултата.</p>
+
+              <div className="grid md:grid-cols-3 gap-4 mb-12 text-left">
+                <div className="bg-slate-800 border border-slate-700 rounded-2xl p-5">
+                  <p className="font-bold text-indigo-300 mb-2">Сертификати</p>
+                  <p className="text-slate-400 text-sm">Златен, сребърен или бронзов според крайния резултат.</p>
+                </div>
+                <div className="bg-slate-800 border border-slate-700 rounded-2xl p-5">
+                  <p className="font-bold text-emerald-300 mb-2">Бонус</p>
+                  <p className="text-slate-400 text-sm">Под 2 минути = +1 бонус точка.</p>
+                </div>
+                <div className="bg-slate-800 border border-slate-700 rounded-2xl p-5">
+                  <p className="font-bold text-yellow-300 mb-2">Отличаване</p>
+                  <p className="text-slate-400 text-sm">Най-добрите 3 резултата ще бъдат отличени.</p>
+                </div>
+              </div>
+
+              <div className="space-y-4 flex flex-col items-center">
+                <button onClick={() => setCurrentView('teamLogin')} className="w-full max-w-sm bg-indigo-600 hover:bg-indigo-500 text-white py-4 px-6 rounded-xl font-bold text-lg transition-all shadow-soft">
+                  Вход за отбор
+                </button>
+                {myTeam && !myTeam.completed && (
+                  <button onClick={() => setCurrentView('quiz')} className="w-full max-w-sm bg-slate-800 border-2 border-slate-700 hover:border-slate-500 text-slate-200 py-4 px-6 rounded-xl font-bold text-lg transition-all">
+                    Продължи играта
+                  </button>
+                )}
+                <button onClick={() => setCurrentView('resultsBoard')} className="w-full max-w-sm bg-slate-800 border-2 border-slate-700 hover:border-slate-500 text-slate-200 py-4 px-6 rounded-xl font-bold text-lg transition-all">
+                  Отличени резултати
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      if (currentView === 'teamLogin') {
+        return (
+          <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center justify-center p-6">
+            <div className="w-full max-w-md bg-slate-800 rounded-2xl p-8 shadow-soft border border-slate-700">
+              <h2 className="text-2xl font-bold mb-3 text-center">Регистрация на отбор</h2>
+              <p className="text-center text-slate-400 text-sm mb-6">Използвайте кратко и ясно име на отбора.</p>
+              <form onSubmit={handleTeamLogin} className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-slate-400 mb-2">Име на вашия отбор</label>
+                  <input type="text" required value={teamNameInput} onChange={(e) => setTeamNameInput(e.target.value)} placeholder="напр. Питагоровци" className="w-full bg-slate-900 border border-slate-700 rounded-lg py-3 px-4 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                </div>
+                <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-500 py-3 rounded-lg font-bold transition-colors">Започни играта</button>
+              </form>
+              <button onClick={() => setCurrentView('menu')} className="w-full mt-4 text-slate-400 hover:text-white text-sm">← Назад към менюто</button>
+            </div>
+          </div>
+        );
+      }
+
+      if (currentView === 'quiz') {
+        if (!myTeam) return <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center">Зареждане...</div>;
+        const teamQuestions = generateQuestionsForTeam(myTeam.seed || 12345);
+        const currentQuestion = teamQuestions[myTeam.questionIndex];
+        if (!currentQuestion) {
+          setCurrentView('final');
+          return null;
+        }
+        const progress = Math.round((myTeam.questionIndex / teamQuestions.length) * 100);
+
+        return (
+          <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center p-6 pt-12">
+            <div className="w-full max-w-lg flex justify-between items-center mb-8 gap-4">
+              <div>
+                <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">Отбор</span>
+                <div className="font-bold text-lg">{myTeam.name}</div>
+              </div>
+              <div className="text-center bg-slate-800 px-4 py-2 rounded-xl border border-slate-700 shadow-inner">
+                <span className="font-mono font-bold text-xl tracking-wider text-slate-200">{formatTime(durationMs)}</span>
+              </div>
+              <div className="text-right">
+                <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">Точки</span>
+                <div className="font-bold text-xl text-indigo-400">{myTeam.score}</div>
+              </div>
+            </div>
+
+            <div className="w-full max-w-lg bg-slate-800 h-2 rounded-full mb-8 overflow-hidden">
+              <div className="bg-indigo-500 h-full transition-all duration-500 ease-out" style={{ width: `${progress}%` }}></div>
+            </div>
+
+            <div className="w-full max-w-lg bg-slate-800 rounded-2xl p-6 sm:p-8 shadow-soft border border-slate-700">
+              <div className="flex justify-between items-center mb-6 border-b border-slate-700 pb-4">
+                <h3 className="text-sm font-bold text-indigo-400 uppercase tracking-wider">Задача {myTeam.questionIndex + 1} от {teamQuestions.length}</h3>
+                <span className="bg-slate-900 text-slate-300 text-xs py-1 px-3 rounded-full border border-slate-700">{currentQuestion.points} т.</span>
+              </div>
+
+              <div className="bg-slate-900/50 rounded-2xl p-4 mb-6 border border-slate-700 flex justify-center items-center">
+                {currentQuestion.svg}
+              </div>
+
+              <p className="text-xl sm:text-2xl font-medium mb-8 leading-relaxed">{currentQuestion.q}</p>
+              <form onSubmit={handleAnswerSubmit}>
+                <input type="text" value={answerInput} onChange={(e) => setAnswerInput(e.target.value)} placeholder="Въведете число тук..." className="w-full bg-slate-900 border-2 border-slate-700 focus:border-indigo-500 rounded-xl py-4 px-5 text-white placeholder-slate-600 focus:outline-none text-lg transition-colors mb-4" autoComplete="off" />
+                {feedback && (
+                  <div className={`p-4 rounded-lg mb-4 ${feedback.type === 'success' ? 'bg-green-900/30 text-green-400 border border-green-800' : 'bg-red-900/30 text-red-400 border border-red-800'}`}>
+                    <span className="font-medium">{feedback.text}</span>
+                  </div>
+                )}
+                <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-bold text-lg transition-all">Изпрати отговор</button>
+              </form>
+            </div>
+          </div>
+        );
+      }
+
+      if (currentView === 'final' && myTeam) {
+        return (
+          <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 text-slate-100">
+            <div id="certificate" className={`w-full max-w-5xl rounded-3xl p-10 shadow-soft border-4 ${certificate.border} bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900`}>
+              <div className="text-center mb-8">
+                <p className="text-slate-400 text-sm mb-2">Идея и педагогически решения: Валя Витковска</p>
+                <div className={`inline-flex items-center gap-3 px-5 py-2 rounded-full ${certificate.softBg} border ${certificate.border} mb-4`}>
+                  <span className="text-3xl">{certificate.badge}</span>
+                  <span className={`font-bold text-lg ${certificate.text}`}>{certificate.title}</span>
+                </div>
+                <h1 className={`text-4xl md:text-5xl font-extrabold mb-3 bg-clip-text text-transparent bg-gradient-to-r ${certificate.gradient}`}>Геометричен куест</h1>
+                <p className="text-slate-400">Сертификат за успешно участие</p>
+              </div>
+
+              <div className="text-center mb-10">
+                <p className="text-lg text-slate-300 mb-2">Присъжда се на отбор</p>
+                <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">{myTeam.name}</h2>
+                <p className="text-slate-300 max-w-2xl mx-auto">За успешно решаване на задачите от играта. Крайният резултат включва основни точки, а при време под 2 минути се добавя 1 бонус точка.</p>
+              </div>
+
+              <div className="grid md:grid-cols-4 gap-5 mb-8">
+                <div className="bg-slate-800/80 p-5 rounded-2xl border border-slate-700 text-center"><p className="text-slate-400 text-sm mb-1">Основни точки</p><p className="text-3xl font-extrabold text-indigo-400">{myTeam.score}</p></div>
+                <div className="bg-slate-800/80 p-5 rounded-2xl border border-slate-700 text-center"><p className="text-slate-400 text-sm mb-1">Бонус</p><p className={`text-3xl font-extrabold ${speedBonus ? 'text-emerald-400' : 'text-slate-500'}`}>{speedBonus ? '+1' : '0'}</p></div>
+                <div className="bg-slate-800/80 p-5 rounded-2xl border border-slate-700 text-center"><p className="text-slate-400 text-sm mb-1">Краен резултат</p><p className="text-3xl font-extrabold text-cyan-400">{totalScore}</p></div>
+                <div className="bg-slate-800/80 p-5 rounded-2xl border border-slate-700 text-center"><p className="text-slate-400 text-sm mb-1">Време</p><p className="text-2xl font-mono text-white">{formatTime(durationMs)}</p></div>
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-5 mb-8">
+                <div className="bg-slate-800/80 p-5 rounded-2xl border border-slate-700"><p className="text-slate-400 text-sm mb-1">Дата</p><p className="text-lg text-white">{today}</p></div>
+                <div className="bg-slate-800/80 p-5 rounded-2xl border border-slate-700"><p className="text-slate-400 text-sm mb-1">Код на резултата</p><p className="text-lg font-mono text-indigo-300 break-all">{resultCode}</p></div>
+                <div className="bg-slate-800/80 p-5 rounded-2xl border border-slate-700"><p className="text-slate-400 text-sm mb-1">Класиране</p><p className="text-lg text-white">{myRank > 0 ? `Място № ${myRank}` : '—'}</p></div>
+              </div>
+
+              {speedBonus === 1 && <div className="mb-6 p-4 rounded-2xl border border-emerald-700 bg-emerald-900/20 text-emerald-300 text-center font-semibold">Браво! Отборът получава 1 бонус точка за време под 2 минути.</div>}
+              {myRank > 0 && myRank <= 3 && <div className="p-4 rounded-2xl border border-yellow-700 bg-yellow-900/20 text-yellow-300 text-center font-semibold">Отличен резултат! Вашият отбор е сред най-добрите 3.</div>}
+            </div>
+
+            <div className="flex flex-wrap justify-center gap-4 mt-8 no-print">
+              <button onClick={downloadPDF} className="bg-green-600 hover:bg-green-500 px-6 py-4 rounded-xl font-bold text-lg shadow-soft">Свали като PDF</button>
+              <button onClick={() => window.print()} className="bg-slate-800 border border-slate-700 hover:border-slate-500 px-6 py-4 rounded-xl font-bold text-lg">Подготви за скрийншот / печат</button>
+              <button onClick={startNewGame} className="bg-indigo-600 hover:bg-indigo-500 px-6 py-4 rounded-xl font-bold text-lg">Нова игра</button>
+            </div>
+          </div>
+        );
+      }
+
+      if (currentView === 'resultsBoard') {
+        const ordered = [...savedResults].sort((a, b) => {
+          if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
+          return a.durationMs - b.durationMs;
+        });
+
+        return (
+          <div className="min-h-screen bg-slate-900 text-slate-100 p-6 flex flex-col items-center">
+            <div className="w-full max-w-5xl">
+              <div className="flex flex-wrap justify-between items-center gap-4 mb-8 mt-4">
+                <h1 className="text-4xl sm:text-5xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-yellow-400 to-orange-500">Отличени резултати</h1>
+                <button onClick={() => setCurrentView('menu')} className="text-slate-400 hover:text-white border border-slate-700 px-4 py-2 rounded-lg text-sm">Назад</button>
+              </div>
+
+              <div className="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden shadow-soft mb-8">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-900 border-b border-slate-700 text-slate-400 uppercase text-xs sm:text-sm tracking-wider">
+                      <th className="py-4 px-6 w-20 text-center">#</th>
+                      <th className="py-4 px-6">Отбор</th>
+                      <th className="py-4 px-6 text-center">Сертификат</th>
+                      <th className="py-4 px-6 text-center">Време</th>
+                      <th className="py-4 px-6 text-center">Бонус</th>
+                      <th className="py-4 px-6 text-right">Краен резултат</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ordered.length === 0 ? (
+                      <tr><td colSpan="6" className="py-12 text-center text-slate-500 italic">Все още няма записани завършени резултати на това устройство.</td></tr>
+                    ) : ordered.map((result, index) => {
+                      const cert = getCertificateTier(result.totalScore);
+                      return (
+                        <tr key={result.resultCode} className="border-b border-slate-700/50 hover:bg-slate-800/70 transition-colors">
+                          <td className="py-5 px-6 text-center">{index + 1}</td>
+                          <td className="py-5 px-6 font-bold text-lg">{result.name}</td>
+                          <td className="py-5 px-6 text-center"><span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border ${cert.border} ${cert.softBg} ${cert.text}`}>{cert.title.replace(' сертификат', '')}</span></td>
+                          <td className="py-5 px-6 text-center font-mono text-slate-300">{formatTime(result.durationMs)}</td>
+                          <td className="py-5 px-6 text-center text-emerald-400 font-bold">{result.speedBonus ? '+1' : '0'}</td>
+                          <td className="py-5 px-6 text-right"><span className="font-extrabold text-2xl text-cyan-400">{result.totalScore}</span></td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="bg-slate-800 rounded-2xl border border-slate-700 p-6">
+                <h2 className="text-2xl font-bold mb-4">Най-добрите 3 резултата</h2>
+                {topThree.length === 0 ? (
+                  <p className="text-slate-500">Все още няма завършени игри.</p>
+                ) : (
+                  <div className="grid md:grid-cols-3 gap-4">
+                    {topThree.map((result, idx) => (
+                      <div key={result.resultCode} className="bg-slate-900 border border-slate-700 rounded-2xl p-5">
+                        <p className="text-2xl mb-2">{idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}</p>
+                        <p className="font-bold text-xl text-white mb-2">{result.name}</p>
+                        <p className="text-slate-400 text-sm mb-1">Краен резултат: <span className="text-cyan-400 font-bold">{result.totalScore}</span></p>
+                        <p className="text-slate-400 text-sm mb-1">Време: <span className="font-mono text-slate-200">{formatTime(result.durationMs)}</span></p>
+                        <p className="text-slate-400 text-sm">Бонус: <span className="text-emerald-400 font-bold">{result.speedBonus ? '+1' : '0'}</span></p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      return null;
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
